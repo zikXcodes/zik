@@ -8,7 +8,7 @@
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
 -- CREATE WINDOW
-local Window = WindUI:CreateWindow({
+local Wind = WindUI:CreateWindow({
     Title = "Bizz Loader v2.0",
     Icon = "solar:folder-2-bold-duotone",
     Author = "by bl_ai for Tuan Bizz",
