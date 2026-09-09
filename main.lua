@@ -1,660 +1,816 @@
 -- =============================================
--- SCRIPT LOADER WIND UI v1.0
+-- BIZZ LOADER v2.0 - WINDUI NATIVE
 -- By: bl_ai for Tuan Bizz
--- Fitur: GUI Modern dengan WindUI Style
+-- Library: WindUI (Official)
 -- =============================================
 
-local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloodball/backups/refs/heads/main/lib"))()
-local window = library:CreateWindow("Bizz Loader v1.0")
+-- LOAD WINDUI LIBRARY
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+
+-- CREATE WINDOW
+local Window = WindUI:CreateWindow({
+    Title = "Bizz Loader v2.0",
+    Icon = "solar:folder-2-bold-duotone",
+    Author = "by bl_ai for Tuan Bizz",
+    Folder = "BizzLoader",
+    Size = UDim2.fromOffset(600, 480),
+    MinSize = Vector2.new(550, 400),
+    MaxSize = Vector2.new(800, 600),
+    ToggleKey = Enum.KeyCode.Insert,
+    Theme = "Dark",
+    Resizable = true,
+    SideBarWidth = 180,
+    HideSearchBar = false,
+    ScrollBarEnabled = true,
+})
 
 -- =============================================
 -- TAB 1: MAIN
 -- =============================================
-local tab1 = window:CreateTab("Main")
+local MainTab = Window:Tab({
+    Title = "Main",
+    Icon = "solar:home-2-bold",
+    IconColor = Color3.fromHex("#257AF7"),
+    IconShape = "Square",
+    Border = true,
+})
 
--- SECTION: Informasi
-local section1 = tab1:CreateSection("System Info")
+-- Section: System Info
+local InfoSection = MainTab:Section({
+    Title = "System Info",
+})
 
-local label1 = section1:CreateLabel("Status: ✅ Online")
-local label2 = section1:CreateLabel("User: " .. game.Players.LocalPlayer.Name)
-local label3 = section1:CreateLabel("Ping: " .. math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()) .. "ms")
+InfoSection:Paragraph({
+    Title = "Status: ✅ Online",
+    Desc = "User: " .. game.Players.LocalPlayer.Name,
+})
 
--- SECTION: Controls
-local section2 = tab1:CreateSection("Quick Controls")
+InfoSection:Paragraph({
+    Title = "Ping: " .. math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()) .. " ms",
+    Desc = "Players: " .. #game.Players:GetPlayers(),
+})
 
-section2:CreateButton("Teleport to Spawn", function()
-    local char = game.Players.LocalPlayer.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        char.HumanoidRootPart.CFrame = CFrame.new(0, 5, 0)
-        print("✅ Teleported to spawn!")
-    else
-        print("❌ Character not found!")
-    end
-end)
+-- Section: Quick Controls
+local ControlsSection = MainTab:Section({
+    Title = "Quick Controls",
+})
 
-section2:CreateButton("Respawn Character", function()
-    game.Players.LocalPlayer:LoadCharacter()
-    print("✅ Respawned!")
-end)
-
-section2:CreateButton("Clear Chat", function()
-    game:GetService("Chat"):Clear()
-    print("✅ Chat cleared!")
-end)
-
--- SECTION: Toggles
-local section3 = tab1:CreateSection("Toggles")
-
-local toggle1 = section3:CreateToggle("NoClip (Walk through walls)", false, function(state)
-    local char = game.Players.LocalPlayer.Character
-    if char then
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = not state
-            end
+ControlsSection:Button({
+    Title = "Teleport to Spawn",
+    Icon = "solar:map-point-bold",
+    Color = Color3.fromHex("#10C550"),
+    Justify = "Center",
+    Callback = function()
+        local char = game.Players.LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = CFrame.new(0, 5, 0)
+            WindUI:Notify({ Title = "Teleport", Content = "Teleported to spawn!", Icon = "check", Duration = 2 })
+        else
+            WindUI:Notify({ Title = "Error", Content = "Character not found!", Icon = "x", Duration = 2 })
         end
-        print("🔘 NoClip: " .. (state and "ON" or "OFF"))
-    end
-end)
+    end,
+})
 
-local toggle2 = section3:CreateToggle("Infinite Jump", false, function(state)
-    local player = game.Players.LocalPlayer
-    local char = player.Character
-    if char and char:FindFirstChild("Humanoid") then
-        char.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, state)
-        char.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, state)
-        char.Humanoid.PlatformStand = state
-        print("🔘 Infinite Jump: " .. (state and "ON" or "OFF"))
-    end
-end)
+ControlsSection:Button({
+    Title = "Respawn Character",
+    Icon = "solar:refresh-bold",
+    Color = Color3.fromHex("#ECA201"),
+    Justify = "Center",
+    Callback = function()
+        game.Players.LocalPlayer:LoadCharacter()
+        WindUI:Notify({ Title = "Respawn", Content = "Character respawned!", Icon = "check", Duration = 2 })
+    end,
+})
 
-local toggle3 = section3:CreateToggle("Anti-AFK (Keep active)", false, function(state)
-    if state then
-        local vu = game:GetService("VirtualUser")
-        game:GetService("Players").LocalPlayer.Idled:Connect(function()
-            vu:CaptureController()
-            vu:ClickButton2(Vector2.new())
-        end)
-        print("🔘 Anti-AFK: ON")
-    else
-        print("🔘 Anti-AFK: OFF (restart to disable)")
-    end
-end)
+ControlsSection:Button({
+    Title = "Clear Chat",
+    Icon = "solar:eraser-bold",
+    Color = Color3.fromHex("#EF4F1D"),
+    Justify = "Center",
+    Callback = function()
+        game:GetService("Chat"):Clear()
+        WindUI:Notify({ Title = "Chat", Content = "Chat cleared!", Icon = "check", Duration = 2 })
+    end,
+})
+
+-- Section: Toggles
+local TogglesSection = MainTab:Section({
+    Title = "Toggles",
+})
+
+TogglesSection:Toggle({
+    Title = "NoClip",
+    Desc = "Walk through walls",
+    Icon = "solar:square-transfer-horizontal-bold",
+    Value = false,
+    Callback = function(state)
+        local char = game.Players.LocalPlayer.Character
+        if char then
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = not state
+                end
+            end
+            WindUI:Notify({ Title = "NoClip", Content = state and "ON" or "OFF", Duration = 1 })
+        end
+    end,
+})
+
+TogglesSection:Toggle({
+    Title = "Infinite Jump",
+    Desc = "Jump without limits",
+    Icon = "solar:arrow-up-bold",
+    Value = false,
+    Callback = function(state)
+        local char = game.Players.LocalPlayer.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, state)
+            char.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, state)
+            char.Humanoid.PlatformStand = state
+            WindUI:Notify({ Title = "Infinite Jump", Content = state and "ON" or "OFF", Duration = 1 })
+        end
+    end,
+})
+
+TogglesSection:Toggle({
+    Title = "Anti-AFK",
+    Desc = "Prevent being kicked for idle",
+    Icon = "solar:shield-check-bold",
+    Value = false,
+    Callback = function(state)
+        if state then
+            local vu = game:GetService("VirtualUser")
+            game:GetService("Players").LocalPlayer.Idled:Connect(function()
+                vu:CaptureController()
+                vu:ClickButton2(Vector2.new())
+            end)
+            WindUI:Notify({ Title = "Anti-AFK", Content = "ON", Duration = 1 })
+        else
+            WindUI:Notify({ Title = "Anti-AFK", Content = "OFF (restart to disable)", Duration = 2 })
+        end
+    end,
+})
 
 -- =============================================
--- TAB 2: ESP / VISUALS
+-- TAB 2: VISUALS
 -- =============================================
-local tab2 = window:CreateTab("Visuals")
+local VisualsTab = Window:Tab({
+    Title = "Visuals",
+    Icon = "solar:eye-bold",
+    IconColor = Color3.fromHex("#7775F2"),
+    IconShape = "Square",
+    Border = true,
+})
 
-local section4 = tab2:CreateSection("ESP Settings")
+local EspSection = VisualsTab:Section({
+    Title = "ESP Settings",
+})
 
-local espToggle = section4:CreateToggle("Enable ESP (Players)", false, function(state)
-    if state then
-        print("🔘 ESP: ON")
-        -- ESP loop
-        spawn(function()
-            while espToggle.Value do
-                for _, player in pairs(game.Players:GetPlayers()) do
-                    if player ~= game.Players.LocalPlayer then
-                        local char = player.Character
-                        if char and char:FindFirstChild("Head") then
-                            local head = char.Head
-                            local highlight = head:FindFirstChild("ESP_Highlight")
-                            if not highlight then
-                                highlight = Instance.new("Highlight")
-                                highlight.Name = "ESP_Highlight"
-                                highlight.Parent = head
-                                highlight.Adornee = head
-                                highlight.FillColor = Color3.new(1, 0, 0)
-                                highlight.FillTransparency = 0.5
-                                highlight.OutlineColor = Color3.new(1, 1, 1)
+local espEnabled = false
+local espConnections = {}
+
+EspSection:Toggle({
+    Title = "Enable ESP",
+    Desc = "Highlight other players",
+    Icon = "solar:eye-bold",
+    Value = false,
+    Callback = function(state)
+        espEnabled = state
+        if state then
+            WindUI:Notify({ Title = "ESP", Content = "ON", Duration = 1 })
+            -- ESP Loop
+            spawn(function()
+                while espEnabled do
+                    for _, player in pairs(game.Players:GetPlayers()) do
+                        if player ~= game.Players.LocalPlayer then
+                            local char = player.Character
+                            if char and char:FindFirstChild("Head") then
+                                local head = char.Head
+                                local highlight = head:FindFirstChild("ESP_Highlight")
+                                if not highlight then
+                                    highlight = Instance.new("Highlight")
+                                    highlight.Name = "ESP_Highlight"
+                                    highlight.Parent = head
+                                    highlight.Adornee = head
+                                    highlight.FillColor = Color3.new(1, 0, 0)
+                                    highlight.FillTransparency = 0.5
+                                    highlight.OutlineColor = Color3.new(1, 1, 1)
+                                end
                             end
                         end
                     end
+                    wait(0.5)
                 end
-                wait(1)
+            end)
+        else
+            -- Remove all highlights
+            for _, player in pairs(game.Players:GetPlayers()) do
+                local char = player.Character
+                if char then
+                    for _, obj in pairs(char:GetDescendants()) do
+                        if obj.Name == "ESP_Highlight" then
+                            obj:Destroy()
+                        end
+                    end
+                end
             end
-        end)
-    else
-        -- Hapus semua highlight
+            WindUI:Notify({ Title = "ESP", Content = "OFF", Duration = 1 })
+        end
+    end,
+})
+
+EspSection:Slider({
+    Title = "ESP Transparency",
+    Step = 0.05,
+    IsTooltip = true,
+    Value = { Min = 0, Max = 1, Default = 0.5 },
+    Callback = function(value)
         for _, player in pairs(game.Players:GetPlayers()) do
             local char = player.Character
             if char then
                 for _, obj in pairs(char:GetDescendants()) do
-                    if obj.Name == "ESP_Highlight" then
-                        obj:Destroy()
+                    if obj.Name == "ESP_Highlight" and obj:IsA("Highlight") then
+                        obj.FillTransparency = value
                     end
                 end
             end
         end
-        print("🔘 ESP: OFF")
-    end
-end)
-
-section4:CreateSlider("ESP Transparency", 0, 1, 0.5, function(value)
-    for _, player in pairs(game.Players:GetPlayers()) do
-        local char = player.Character
-        if char then
-            for _, obj in pairs(char:GetDescendants()) do
-                if obj.Name == "ESP_Highlight" and obj:IsA("Highlight") then
-                    obj.FillTransparency = value
-                end
-            end
-        end
-    end
-    print("🎨 ESP Transparency: " .. value)
-end)
-
-section4:CreateColorPicker("ESP Color", Color3.new(1, 0, 0), function(color)
-    for _, player in pairs(game.Players:GetPlayers()) do
-        local char = player.Character
-        if char then
-            for _, obj in pairs(char:GetDescendants()) do
-                if obj.Name == "ESP_Highlight" and obj:IsA("Highlight") then
-                    obj.FillColor = color
-                end
-            end
-        end
-    end
-    print("🎨 ESP Color changed!")
-end)
-
--- SECTION: Player List
-local section5 = tab2:CreateSection("Player List")
-
-local playerList = section5:CreateLabel("Players: ")
-game.Players.PlayerAdded:Connect(function()
-    local count = #game.Players:GetPlayers()
-    playerList:SetText("Players: " .. count)
-end)
-game.Players.PlayerRemoved:Connect(function()
-    local count = #game.Players:GetPlayers()
-    playerList:SetText("Players: " .. count)
-end)
-
--- =============================================
--- TAB 3: MISC / UTILITIES
--- =============================================
-local tab3 = window:CreateTab("Misc")
-
-local section6 = tab3:CreateSection("Walk / Fly Speed")
-
-section6:CreateSlider("Walk Speed", 0, 100, 16, function(value)
-    local char = game.Players.LocalPlayer.Character
-    if char and char:FindFirstChild("Humanoid") then
-        char.Humanoid.WalkSpeed = value
-        print("🏃 Walk Speed: " .. value)
-    end
-end)
-
-section6:CreateSlider("Jump Power", 0, 100, 50, function(value)
-    local char = game.Players.LocalPlayer.Character
-    if char and char:FindFirstChild("Humanoid") then
-        char.Humanoid.JumpPower = value
-        print("💪 Jump Power: " .. value)
-    end
-end)
-
--- SECTION: Teleport
-local section7 = tab3:CreateSection("Teleport to Player")
-
-local playerDropdown = section7:CreateDropdown("Select Player", game.Players:GetPlayers(), function(selected)
-    local target = game.Players:FindFirstChild(selected)
-    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-        local char = game.Players.LocalPlayer.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            char.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-            print("✅ Teleported to " .. selected)
-        end
-    else
-        print("❌ Target not found or not loaded!")
-    end
-end)
-
--- SECTION: Tools
-local section8 = tab3:CreateSection("Tools")
-
-section8:CreateButton("Get All Tools", function()
-    local player = game.Players.LocalPlayer
-    local backpack = player.Backpack
-    for _, tool in pairs(backpack:GetChildren()) do
-        tool.Parent = player.Character
-        wait(0.1)
-    end
-    print("✅ All tools equipped!")
-end)
-
-section8:CreateButton("Infinite Yield (CMD)", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
-    print("✅ Infinite Yield loaded!")
-end)
-
--- SECTION: Credits
-local section9 = tab3:CreateSection("Credits")
-section9:CreateLabel("🔥 Made by bl_ai for Tuan Bizz")
-section9:CreateLabel("⚡ Version: 1.0")
-section9:CreateLabel("😈 WindUI Style Loader")
-
--- =============================================
--- TAB 4: SCRIPT EXECUTOR
--- =============================================
-local tab4 = window:CreateTab("Executor")
-
-local section10 = tab4:CreateSection("Execute Custom Script")
-
-local textbox = section10:CreateTextbox("Paste your script here...", function(text)
-    -- Store script for execution
-    _G.customScript = text
-    print("📝 Script saved! Click Execute to run.")
-end)
-
-section10:CreateButton("Execute Script", function()
-    if _G.customScript and #_G.customScript > 0 then
-        local success, err = pcall(loadstring(_G.customScript))
-        if success then
-            print("✅ Script executed successfully!")
-        else
-            print("❌ Error: " .. tostring(err))
-        end
-    else
-        print("❌ No script to execute!")
-    end
-end)
-
-section10:CreateButton("Clear Script", function()
-    _G.customScript = ""
-    textbox:SetText("")
-    print("🧹 Script cleared!")
-end)
-
--- =============================================
--- NOTIFICATIONS
--- =============================================
-window:CreateNotification({
-    Title = "Bizz Loader",
-    Text = "✅ Loader berhasil diaktifkan!",
-    Duration = 3,
-    Type = "info"
+    end,
 })
 
-print("===========================================")
-print("🔥 BIZZ LOADER v1.0 LOADED SUCCESSFULLY!")
-print("👤 User: " .. game.Players.LocalPlayer.Name)
-print("📌 Open GUI with: toggle key")
-print("===========================================")
-
--- =============================================
--- KEYBIND: Toggle GUI (Default: Insert)
--- =============================================
-local UserInputService = game:GetService("UserInputService")
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.Insert then
-        window:ToggleVisibility()
-    end
-end)
-
--- =============================================
--- CLEANUP FUNCTION
--- =============================================
-local function cleanup()
-    -- Destroy all highlights
-    for _, player in pairs(game.Players:GetPlayers()) do
-        local char = player.Character
-        if char then
-            for _, obj in pairs(char:GetDescendants()) do
-                if obj.Name == "ESP_Highlight" then
-                    obj:Destroy()
+EspSection:Colorpicker({
+    Title = "ESP Color",
+    Default = Color3.new(1, 0, 0),
+    Callback = function(color)
+        for _, player in pairs(game.Players:GetPlayers()) do
+            local char = player.Character
+            if char then
+                for _, obj in pairs(char:GetDescendants()) do
+                    if obj.Name == "ESP_Highlight" and obj:IsA("Highlight") then
+                        obj.FillColor = color
+                    end
                 end
             end
         end
-    end
-    print("🧹 Cleaned up ESP highlights!")
-end
+    end,
+})
 
--- Auto cleanup when player leaves
-game.Players.LocalPlayer:GetPropertyChangedSignal("Character"):Connect(function()
-    if not game.Players.LocalPlayer.Character then
-        cleanup()
-    end
+-- Section: Player List
+local PlayerListSection = VisualsTab:Section({
+    Title = "Player List",
+})
+
+local playerCountLabel = PlayerListSection:Paragraph({
+    Title = "Players: " .. #game.Players:GetPlayers(),
+    Desc = "Online players in server",
+})
+
+game.Players.PlayerAdded:Connect(function()
+    playerCountLabel:SetTitle("Players: " .. #game.Players:GetPlayers())
+end)
+game.Players.PlayerRemoved:Connect(function()
+    playerCountLabel:SetTitle("Players: " .. #game.Players:GetPlayers())
 end)
 
 -- =============================================
--- TAB 5: AUTO FARM & GRIND
+-- TAB 3: MISC
 -- =============================================
-local tab5 = window:CreateTab("Auto Farm")
+local MiscTab = Window:Tab({
+    Title = "Misc",
+    Icon = "solar:folder-with-files-bold",
+    IconColor = Color3.fromHex("#ECA201"),
+    IconShape = "Square",
+    Border = true,
+})
 
-local section11 = tab5:CreateSection("Auto Farm Settings")
+-- Section: Walk / Fly Speed
+local SpeedSection = MiscTab:Section({
+    Title = "Walk / Jump Speed",
+})
 
-local autoFarmToggle = section11:CreateToggle("Enable Auto Farm", false, function(state)
-    if state then
-        print("🌾 Auto Farm: ON")
-        spawn(function()
-            while autoFarmToggle.Value do
-                local char = game.Players.LocalPlayer.Character
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    -- Cari item terdekat
-                    local nearestItem = nil
-                    local nearestDist = math.huge
-                    
-                    for _, v in pairs(workspace:GetDescendants()) do
-                        if v:IsA("Tool") and v.Parent ~= char then
-                            local handle = v:FindFirstChild("Handle")
+SpeedSection:Slider({
+    Title = "Walk Speed",
+    Step = 1,
+    IsTooltip = true,
+    Value = { Min = 0, Max = 100, Default = 16 },
+    Callback = function(value)
+        local char = game.Players.LocalPlayer.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.WalkSpeed = value
+        end
+    end,
+})
+
+SpeedSection:Slider({
+    Title = "Jump Power",
+    Step = 1,
+    IsTooltip = true,
+    Value = { Min = 0, Max = 100, Default = 50 },
+    Callback = function(value)
+        local char = game.Players.LocalPlayer.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.JumpPower = value
+        end
+    end,
+})
+
+-- Section: Teleport to Player
+local TeleportSection = MiscTab:Section({
+    Title = "Teleport to Player",
+})
+
+TeleportSection:Dropdown({
+    Title = "Select Player",
+    Values = game.Players:GetPlayers(),
+    Value = nil,
+    Callback = function(selected)
+        local target = game.Players:FindFirstChild(selected)
+        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            local char = game.Players.LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                char.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+                WindUI:Notify({ Title = "Teleport", Content = "Teleported to " .. selected, Duration = 2 })
+            end
+        else
+            WindUI:Notify({ Title = "Error", Content = "Target not found!", Duration = 2 })
+        end
+    end,
+})
+
+-- Section: Tools
+local ToolsSection = MiscTab:Section({
+    Title = "Tools",
+})
+
+ToolsSection:Button({
+    Title = "Get All Tools",
+    Icon = "solar:folder-with-files-bold",
+    Color = Color3.fromHex("#10C550"),
+    Justify = "Center",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+        local backpack = player.Backpack
+        for _, tool in pairs(backpack:GetChildren()) do
+            tool.Parent = player.Character
+            wait(0.1)
+        end
+        WindUI:Notify({ Title = "Tools", Content = "All tools equipped!", Duration = 2 })
+    end,
+})
+
+ToolsSection:Button({
+    Title = "Infinite Yield (CMD)",
+    Icon = "solar:terminal-bold",
+    Color = Color3.fromHex("#7775F2"),
+    Justify = "Center",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+        WindUI:Notify({ Title = "CMD", Content = "Infinite Yield loaded!", Duration = 2 })
+    end,
+})
+
+-- Section: Credits
+local CreditsSection = MiscTab:Section({
+    Title = "Credits",
+})
+
+CreditsSection:Paragraph({
+    Title = "🔥 Made by bl_ai for Tuan Bizz",
+    Desc = "⚡ Version: 2.0\n😈 WindUI Native Loader",
+})
+
+-- =============================================
+-- TAB 4: EXECUTOR
+-- =============================================
+local ExecutorTab = Window:Tab({
+    Title = "Executor",
+    Icon = "solar:code-bold",
+    IconColor = Color3.fromHex("#EF4F1D"),
+    IconShape = "Square",
+    Border = true,
+})
+
+local ExecutorSection = ExecutorTab:Section({
+    Title = "Execute Custom Script",
+})
+
+local scriptInput = ExecutorSection:Input({
+    Title = "Script",
+    Type = "Textarea",
+    Placeholder = "Paste your script here...",
+    Callback = function(text)
+        _G.customScript = text
+    end,
+})
+
+ExecutorSection:Button({
+    Title = "Execute Script",
+    Icon = "solar:play-bold",
+    Color = Color3.fromHex("#10C550"),
+    Justify = "Center",
+    Callback = function()
+        if _G.customScript and #_G.customScript > 0 then
+            local success, err = pcall(loadstring(_G.customScript))
+            if success then
+                WindUI:Notify({ Title = "Executor", Content = "Script executed successfully!", Duration = 2 })
+            else
+                WindUI:Notify({ Title = "Error", Content = tostring(err), Duration = 3 })
+            end
+        else
+            WindUI:Notify({ Title = "Error", Content = "No script to execute!", Duration = 2 })
+        end
+    end,
+})
+
+ExecutorSection:Button({
+    Title = "Clear Script",
+    Icon = "solar:eraser-bold",
+    Color = Color3.fromHex("#EF4F1D"),
+    Justify = "Center",
+    Callback = function()
+        _G.customScript = ""
+        scriptInput:Set("")
+        WindUI:Notify({ Title = "Executor", Content = "Script cleared!", Duration = 2 })
+    end,
+})
+
+-- =============================================
+-- AUTO FARM TAB
+-- =============================================
+local FarmTab = Window:Tab({
+    Title = "Auto Farm",
+    Icon = "solar:leaf-bold",
+    IconColor = Color3.fromHex("#10C550"),
+    IconShape = "Square",
+    Border = true,
+})
+
+local FarmSection = FarmTab:Section({
+    Title = "Auto Farm Settings",
+})
+
+local autoFarmActive = false
+
+FarmSection:Toggle({
+    Title = "Enable Auto Farm",
+    Desc = "Auto collect items nearby",
+    Icon = "solar:leaf-bold",
+    Value = false,
+    Callback = function(state)
+        autoFarmActive = state
+        if state then
+            WindUI:Notify({ Title = "Auto Farm", Content = "ON", Duration = 1 })
+            spawn(function()
+                while autoFarmActive do
+                    local char = game.Players.LocalPlayer.Character
+                    if char and char:FindFirstChild("HumanoidRootPart") then
+                        local nearestItem = nil
+                        local nearestDist = math.huge
+                        for _, v in pairs(workspace:GetDescendants()) do
+                            if v:IsA("Tool") and v.Parent ~= char then
+                                local handle = v:FindFirstChild("Handle")
+                                if handle then
+                                    local dist = (handle.Position - char.HumanoidRootPart.Position).Magnitude
+                                    if dist < nearestDist and dist < 50 then
+                                        nearestDist = dist
+                                        nearestItem = v
+                                    end
+                                end
+                            end
+                        end
+                        if nearestItem then
+                            local handle = nearestItem:FindFirstChild("Handle")
                             if handle then
-                                local dist = (handle.Position - char.HumanoidRootPart.Position).Magnitude
-                                if dist < nearestDist and dist < 50 then
-                                    nearestDist = dist
-                                    nearestItem = v
+                                char.HumanoidRootPart.CFrame = handle.CFrame + Vector3.new(0, 2, 0)
+                                wait(0.3)
+                                local detector = nearestItem:FindFirstChild("ClickDetector") or nearestItem.Parent:FindFirstChild("ClickDetector")
+                                if detector then
+                                    fireclickdetector(detector)
                                 end
                             end
                         end
                     end
-                    
-                    if nearestItem then
-                        local handle = nearestItem:FindFirstChild("Handle")
-                        if handle then
-                            char.HumanoidRootPart.CFrame = handle.CFrame + Vector3.new(0, 2, 0)
-                            wait(0.3)
-                            
-                            -- Coba klik ClickDetector
-                            local detector = nearestItem:FindFirstChild("ClickDetector") or 
-                                           nearestItem.Parent:FindFirstChild("ClickDetector")
-                            if detector then
-                                fireclickdetector(detector)
+                    wait(1)
+                end
+            end)
+        else
+            WindUI:Notify({ Title = "Auto Farm", Content = "OFF", Duration = 1 })
+        end
+    end,
+})
+
+FarmSection:Slider({
+    Title = "Farm Range",
+    Step = 1,
+    IsTooltip = true,
+    Value = { Min = 10, Max = 100, Default = 50 },
+    Callback = function(value)
+        _G.farmRange = value
+    end,
+})
+
+-- =============================================
+-- COMBAT TAB
+-- =============================================
+local CombatTab = Window:Tab({
+    Title = "Combat",
+    Icon = "solar:sword-bold",
+    IconColor = Color3.fromHex("#EF4F1D"),
+    IconShape = "Square",
+    Border = true,
+})
+
+local CombatSection = CombatTab:Section({
+    Title = "Auto Combat",
+})
+
+local autoCombatActive = false
+
+CombatSection:Toggle({
+    Title = "Auto Attack Mobs",
+    Desc = "Automatically attack nearby enemies",
+    Icon = "solar:sword-bold",
+    Value = false,
+    Callback = function(state)
+        autoCombatActive = state
+        if state then
+            WindUI:Notify({ Title = "Auto Combat", Content = "ON", Duration = 1 })
+            spawn(function()
+                while autoCombatActive do
+                    local char = game.Players.LocalPlayer.Character
+                    if char and char:FindFirstChild("HumanoidRootPart") then
+                        local nearestMob = nil
+                        local nearestDist = math.huge
+                        for _, v in pairs(workspace:GetDescendants()) do
+                            if v:IsA("Model") and v:FindFirstChild("Humanoid") then
+                                if v ~= char and v:FindFirstChild("HumanoidRootPart") then
+                                    local dist = (v.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude
+                                    if dist < nearestDist and dist < 30 then
+                                        nearestDist = dist
+                                        nearestMob = v
+                                    end
+                                end
                             end
                         end
-                    end
-                end
-                wait(1)
-            end
-        end)
-    else
-        print("🌾 Auto Farm: OFF")
-    end
-end)
-
-section11:CreateSlider("Farm Range", 10, 100, 50, function(value)
-    _G.farmRange = value
-    print("📏 Farm Range: " .. value)
-end)
-
-local autoCollectToggle = section11:CreateToggle("Auto Collect Drops", false, function(state)
-    if state then
-        print("📦 Auto Collect: ON")
-        spawn(function()
-            while autoCollectToggle.Value do
-                local char = game.Players.LocalPlayer.Character
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    for _, v in pairs(workspace:GetDescendants()) do
-                        if v:IsA("BasePart") and v.Name:lower():find("drop") or v.Name:lower():find("item") then
-                            if (v.Position - char.HumanoidRootPart.Position).Magnitude < 20 then
-                                char.HumanoidRootPart.CFrame = v.CFrame + Vector3.new(0, 2, 0)
+                        if nearestMob then
+                            local hrp = nearestMob:FindFirstChild("HumanoidRootPart")
+                            if hrp then
+                                char.HumanoidRootPart.CFrame = hrp.CFrame + Vector3.new(0, 0, 3)
                                 wait(0.2)
-                            end
-                        end
-                    end
-                end
-                wait(0.5)
-            end
-        end)
-    else
-        print("📦 Auto Collect: OFF")
-    end
-end)
-
--- =============================================
--- TAB 6: COMBAT
--- =============================================
-local tab6 = window:CreateTab("Combat")
-
-local section12 = tab6:CreateSection("Auto Combat")
-
-local autoCombatToggle = section12:CreateToggle("Auto Attack Mobs", false, function(state)
-    if state then
-        print("⚔️ Auto Combat: ON")
-        spawn(function()
-            while autoCombatToggle.Value do
-                local char = game.Players.LocalPlayer.Character
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    -- Cari mob terdekat
-                    local nearestMob = nil
-                    local nearestDist = math.huge
-                    
-                    for _, v in pairs(workspace:GetDescendants()) do
-                        if v:IsA("Model") and v:FindFirstChild("Humanoid") then
-                            if v ~= char and v:FindFirstChild("HumanoidRootPart") then
-                                local dist = (v.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude
-                                if dist < nearestDist and dist < 30 then
-                                    nearestDist = dist
-                                    nearestMob = v
+                                local tool = char:FindFirstChildWhichIsA("Tool")
+                                if tool then
+                                    tool:Activate()
                                 end
                             end
                         end
                     end
-                    
-                    if nearestMob then
-                        local hrp = nearestMob:FindFirstChild("HumanoidRootPart")
-                        if hrp then
-                            char.HumanoidRootPart.CFrame = hrp.CFrame + Vector3.new(0, 0, 3)
-                            wait(0.2)
-                            -- Simulasi attack (gunakan tool atau melee)
-                            local tool = char:FindFirstChildWhichIsA("Tool")
-                            if tool then
-                                tool:Activate()
-                            end
-                        end
-                    end
+                    wait(0.5)
                 end
-                wait(0.5)
-            end
-        end)
-    else
-        print("⚔️ Auto Combat: OFF")
-    end
-end)
+            end)
+        else
+            WindUI:Notify({ Title = "Auto Combat", Content = "OFF", Duration = 1 })
+        end
+    end,
+})
 
-section12:CreateSlider("Combat Range", 5, 50, 20, function(value)
-    _G.combatRange = value
-    print("⚔️ Combat Range: " .. value)
-end)
+CombatSection:Slider({
+    Title = "Combat Range",
+    Step = 1,
+    IsTooltip = true,
+    Value = { Min = 5, Max = 50, Default = 20 },
+    Callback = function(value)
+        _G.combatRange = value
+    end,
+})
 
--- SECTION: Kill Aura
-local section13 = tab6:CreateSection("Kill Aura")
+-- Section: Kill Aura
+local KillAuraSection = CombatTab:Section({
+    Title = "Kill Aura",
+})
 
-local killAuraToggle = section13:CreateToggle("Kill Aura (Insta Kill)", false, function(state)
-    if state then
-        print("💀 Kill Aura: ON")
-        spawn(function()
-            while killAuraToggle.Value do
-                local char = game.Players.LocalPlayer.Character
-                if char then
-                    for _, v in pairs(workspace:GetDescendants()) do
-                        if v:IsA("Model") and v:FindFirstChild("Humanoid") then
-                            if v ~= char and v:FindFirstChild("HumanoidRootPart") then
-                                local dist = (v.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude
-                                if dist < 15 then
-                                    v.Humanoid.Health = 0
+local killAuraActive = false
+
+KillAuraSection:Toggle({
+    Title = "Kill Aura",
+    Desc = "Instantly kill nearby enemies",
+    Icon = "solar:skull-bold",
+    Value = false,
+    Callback = function(state)
+        killAuraActive = state
+        if state then
+            WindUI:Notify({ Title = "Kill Aura", Content = "ON", Duration = 1 })
+            spawn(function()
+                while killAuraActive do
+                    local char = game.Players.LocalPlayer.Character
+                    if char then
+                        for _, v in pairs(workspace:GetDescendants()) do
+                            if                             if v:IsA("Model") and v:FindFirstChild("Humanoid") then
+                                if v ~= char and v:FindFirstChild("HumanoidRootPart") then
+                                    local dist = (v.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude
+                                    if dist < 15 then
+                                        v.Humanoid.Health = 0
+                                    end
                                 end
                             end
                         end
                     end
+                    wait(0.2)
                 end
-                wait(0.2)
-            end
-        end)
-    else
-        print("💀 Kill Aura: OFF")
-    end
-end)
+            end)
+        else
+            WindUI:Notify({ Title = "Kill Aura", Content = "OFF", Duration = 1 })
+        end
+    end,
+})
 
 -- =============================================
--- TAB 7: TELEPORT & WAYPOINTS
+-- TELEPORTS TAB
 -- =============================================
-local tab7 = window:CreateTab("Teleports")
+local TeleportsTab = Window:Tab({
+    Title = "Teleports",
+    Icon = "solar:map-point-bold",
+    IconColor = Color3.fromHex("#257AF7"),
+    IconShape = "Square",
+    Border = true,
+})
 
-local section14 = tab7:CreateSection("Saved Locations")
+local LocationsSection = TeleportsTab:Section({
+    Title = "Saved Locations",
+})
 
--- Save locations
 local locations = {}
 local locationList = {}
 
 local function saveLocation(name, pos)
     locations[name] = pos
     table.insert(locationList, name)
-    print("📍 Location saved: " .. name)
+    WindUI:Notify({ Title = "Location", Content = "Saved: " .. name, Duration = 2 })
 end
 
-section14:CreateTextbox("Location Name", function(text)
-    _G.tempLocationName = text
-end)
+local locationNameInput = LocationsSection:Input({
+    Title = "Location Name",
+    Placeholder = "Enter name...",
+    Callback = function(text)
+        _G.tempLocationName = text
+    end,
+})
 
-section14:CreateButton("Save Current Location", function()
-    local char = game.Players.LocalPlayer.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        local pos = char.HumanoidRootPart.Position
-        if _G.tempLocationName and #_G.tempLocationName > 0 then
-            saveLocation(_G.tempLocationName, pos)
-            -- Update dropdown
-            local newDropdown = section14:CreateDropdown("Select Location", locationList, function(selected)
-                local pos = locations[selected]
-                if pos then
-                    local char = game.Players.LocalPlayer.Character
-                    if char and char:FindFirstChild("HumanoidRootPart") then
-                        char.HumanoidRootPart.CFrame = CFrame.new(pos)
-                        print("📍 Teleported to: " .. selected)
-                    end
-                end
-            end)
+LocationsSection:Button({
+    Title = "Save Current Location",
+    Icon = "solar:save-bold",
+    Color = Color3.fromHex("#10C550"),
+    Justify = "Center",
+    Callback = function()
+        local char = game.Players.LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            local pos = char.HumanoidRootPart.Position
+            if _G.tempLocationName and #_G.tempLocationName > 0 then
+                saveLocation(_G.tempLocationName, pos)
+                -- Refresh dropdown
+                local newDropdown = LocationsSection:Dropdown({
+                    Title = "Select Location",
+                    Values = locationList,
+                    Value = nil,
+                    Callback = function(selected)
+                        local pos = locations[selected]
+                        if pos then
+                            local char = game.Players.LocalPlayer.Character
+                            if char and char:FindFirstChild("HumanoidRootPart") then
+                                char.HumanoidRootPart.CFrame = CFrame.new(pos)
+                                WindUI:Notify({ Title = "Teleport", Content = "Teleported to " .. selected, Duration = 2 })
+                            end
+                        end
+                    end,
+                })
+            end
+        else
+            WindUI:Notify({ Title = "Error", Content = "Character not found!", Duration = 2 })
         end
-    else
-        print("❌ Character not found!")
-    end
-end)
+    end,
+})
 
-section14:CreateButton("Clear All Locations", function()
-    locations = {}
-    locationList = {}
-    print("🧹 All locations cleared!")
-end)
+LocationsSection:Button({
+    Title = "Clear All Locations",
+    Icon = "solar:trash-bold",
+    Color = Color3.fromHex("#EF4F1D"),
+    Justify = "Center",
+    Callback = function()
+        locations = {}
+        locationList = {}
+        WindUI:Notify({ Title = "Locations", Content = "All locations cleared!", Duration = 2 })
+    end,
+})
 
--- SECTION: Quick Teleports
-local section15 = tab7:CreateSection("Quick Teleports")
+-- Section: Quick Teleports
+local QuickTeleportSection = TeleportsTab:Section({
+    Title = "Quick Teleports",
+})
 
 local quickTeleports = {
     {"Spawn", CFrame.new(0, 5, 0)},
     {"Sky", CFrame.new(0, 500, 0)},
     {"Underground", CFrame.new(0, -50, 0)},
-    {"Center", CFrame.new(0, 0, 0)}
+    {"Center", CFrame.new(0, 0, 0)},
 }
 
 for _, teleport in pairs(quickTeleports) do
-    section15:CreateButton("Teleport to " .. teleport[1], function()
-        local char = game.Players.LocalPlayer.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            char.HumanoidRootPart.CFrame = teleport[2]
-            print("📍 Teleported to " .. teleport[1])
-        end
-    end)
-end
-
--- =============================================
--- TAB 8: SETTINGS
--- =============================================
-local tab8 = window:CreateTab("Settings")
-
-local section16 = tab8:CreateSection("UI Settings")
-
-section16:CreateButton("Change Theme (Light/Dark)", function()
-    if window.Theme == "Dark" then
-        window:SetTheme("Light")
-        print("🎨 Theme: Light")
-    else
-        window:SetTheme("Dark")
-        print("🎨 Theme: Dark")
-    end
-end)
-
-section16:CreateSlider("UI Transparency", 0, 1, 0.9, function(value)
-    window:SetTransparency(value)
-    print("🎨 UI Transparency: " .. value)
-end)
-
--- SECTION: Keybinds
-local section17 = tab8:CreateSection("Keybinds")
-
-section17:CreateButton("Change Toggle Key (Default: Insert)", function()
-    print("⌨️ Press any key to set as new toggle key...")
-    local UserInputService = game:GetService("UserInputService")
-    local keyConnection
-    keyConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if not gameProcessed then
-            local key = input.KeyCode.Name
-            print("⌨️ New toggle key set to: " .. key)
-            -- Update keybind
-            window.ToggleKey = Enum.KeyCode[key]
-            keyConnection:Disconnect()
-        end
-    end)
-end)
-
--- SECTION: About
-local section18 = tab8:CreateSection("About")
-
-section18:CreateLabel("📦 Bizz Loader v1.0")
-section18:CreateLabel("👨‍💻 Developed by bl_ai")
-section18:CreateLabel("🎯 For Tuan Bizz")
-section18:CreateLabel("📅 Created: 2026")
-section18:CreateLabel("⚡ WindUI Framework")
-
--- =============================================
--- TAB 9: CONSOLE / LOGS
--- =============================================
-local tab9 = window:CreateTab("Console")
-
-local section19 = tab9:CreateSection("Console Output")
-
-local consoleLog = section19:CreateLabel("Console ready...")
-
--- Override print function
-local oldPrint = print
-print = function(...)
-    local args = {...}
-    local message = table.concat(args, " ")
-    consoleLog:SetText(message)
-    oldPrint(...)
-end
-
-section19:CreateButton("Clear Console", function()
-    consoleLog:SetText("Console cleared...")
-    print("🧹 Console cleared!")
-end)
-
--- =============================================
--- AUTO EXECUTE
--- =============================================
-spawn(function()
-    wait(2)
-    print("🔄 Auto-execute features loaded!")
-end)
-
--- =============================================
--- ERROR HANDLING
--- =============================================
-local function handleError(err)
-    print("❌ Error: " .. tostring(err))
-    window:CreateNotification({
-        Title = "Error",
-        Text = "An error occurred: " .. tostring(err),
-        Duration = 3,
-        Type = "error"
+    QuickTeleportSection:Button({
+        Title = "Teleport to " .. teleport[1],
+        Icon = "solar:map-pin-bold",
+        Color = Color3.fromHex("#7775F2"),
+        Justify = "Center",
+        Callback = function()
+            local char = game.Players.LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                char.HumanoidRootPart.CFrame = teleport[2]
+                WindUI:Notify({ Title = "Teleport", Content = "Teleported to " .. teleport[1], Duration = 2 })
+            end
+        end,
     })
 end
 
--- Global error handler
-xpcall(function()
-    -- Main script execution
-end, handleError)
+-- =============================================
+-- SETTINGS TAB
+-- =============================================
+local SettingsTab = Window:Tab({
+    Title = "Settings",
+    Icon = "solar:settings-bold",
+    IconColor = Color3.fromHex("#83889E"),
+    IconShape = "Square",
+    Border = true,
+})
+
+local UISection = SettingsTab:Section({
+    Title = "UI Settings",
+})
+
+UISection:Button({
+    Title = "Change Theme (Light/Dark)",
+    Icon = "solar:palette-bold",
+    Color = Color3.fromHex("#7775F2"),
+    Justify = "Center",
+    Callback = function()
+        if Window.Theme == "Dark" then
+            Window:SetTheme("Light")
+            WindUI:Notify({ Title = "Theme", Content = "Light theme applied", Duration = 2 })
+        else
+            Window:SetTheme("Dark")
+            WindUI:Notify({ Title = "Theme", Content = "Dark theme applied", Duration = 2 })
+        end
+    end,
+})
+
+UISection:Slider({
+    Title = "UI Transparency",
+    Step = 0.05,
+    IsTooltip = true,
+    Value = { Min = 0, Max = 1, Default = 0.9 },
+    Callback = function(value)
+        Window:SetTransparency(value)
+    end,
+})
+
+-- Section: Keybinds
+local KeybindSection = SettingsTab:Section({
+    Title = "Keybinds",
+})
+
+KeybindSection:Keybind({
+    Title = "Toggle GUI Key",
+    Desc = "Current: Insert",
+    Value = "Insert",
+    Callback = function(key)
+        Window:SetToggleKey(Enum.KeyCode[key])
+        WindUI:Notify({ Title = "Keybind", Content = "Toggle key set to: " .. key, Duration = 2 })
+    end,
+})
+
+-- Section: About
+local AboutSection = SettingsTab:Section({
+    Title = "About",
+})
+
+AboutSection:Paragraph({
+    Title = "📦 Bizz Loader v2.0",
+    Desc = "👨‍💻 Developed by bl_ai\n🎯 For Tuan Bizz\n📅 Created: 2026\n⚡ WindUI Native Framework",
+})
 
 -- =============================================
--- END OF SCRIPT - FULL VERSION
+-- NOTIFICATIONS
+-- =============================================
+WindUI:Notify({
+    Title = "Bizz Loader",
+    Content = "✅ Loader berhasil diaktifkan!",
+    Icon = "solar:check-circle-bold",
+    Duration = 3,
+})
+
+print("===========================================")
+print("🔥 BIZZ LOADER v2.0 LOADED SUCCESSFULLY!")
+print("👤 User: " .. game.Players.LocalPlayer.Name)
+print("📌 Open GUI with: Insert key")
+print("===========================================")
+
+-- =============================================
+-- END OF SCRIPT
 -- =============================================
