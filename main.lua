@@ -15,6 +15,80 @@ if oldGui then
     oldGui:Destroy()
 end
 
+-- ==================== EXECUTING ANIMATION SYSTEM ====================
+local ExecOverlay = Instance.new("Frame")
+ExecOverlay.Name = "ExecOverlay"
+ExecOverlay.Size = UDim2.new(1, 0, 1, 0)
+ExecOverlay.Position = UDim2.new(0, 0, 0, 0)
+ExecOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+ExecOverlay.BackgroundTransparency = 0.5
+ExecOverlay.BorderSizePixel = 0
+ExecOverlay.ZIndex = 50
+ExecOverlay.Visible = false
+ExecOverlay.Parent = MainFrame
+createCorner(ExecOverlay, 14)
+
+local ExecText = Instance.new("TextLabel")
+ExecText.Size = UDim2.new(1, 0, 0, 30)
+ExecText.Position = UDim2.new(0, 0, 0.5, -50)
+ExecText.BackgroundTransparency = 1
+ExecText.Text = "⚡ Executing..."
+ExecText.TextColor3 = Colors.Accent
+ExecText.Font = Enum.Font.GothamBold
+ExecText.TextSize = 18
+ExecText.ZIndex = 51
+ExecText.Parent = ExecOverlay
+
+local ProgressBg = Instance.new("Frame")
+ProgressBg.Size = UDim2.new(0.6, 0, 0, 6)
+ProgressBg.Position = UDim2.new(0.2, 0, 0.5, 10)
+ProgressBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+ProgressBg.BorderSizePixel = 0
+ProgressBg.ZIndex = 51
+ProgressBg.Parent = ExecOverlay
+createCorner(ProgressBg, 3)
+
+local ProgressFill = Instance.new("Frame")
+ProgressFill.Size = UDim2.new(0, 0, 1, 0)
+ProgressFill.BackgroundColor3 = Colors.Accent
+ProgressFill.BorderSizePixel = 0
+ProgressFill.ZIndex = 52
+ProgressFill.Parent = ProgressBg
+createCorner(ProgressFill, 3)
+
+-- Gradient Progress Bar biar makin keren
+local progressGradient = Instance.new("UIGradient")
+progressGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Colors.AccentDark),
+    ColorSequenceKeypoint.new(1, Colors.AccentHover)
+})
+progressGradient.Rotation = 0
+progressGradient.Parent = ProgressFill
+
+-- Fungsi Animasi Execute
+local function playExecuteAnimation(callback)
+    if ExecOverlay.Visible then return end -- Cegah spam klik
+    
+    ExecOverlay.Visible = true
+    ProgressFill.Size = UDim2.new(0, 0, 1, 0)
+    
+    -- Efek suara (bisa diganti kalau tuan punya asset ID lain)
+    playSound(Sounds.Click, 0.6)
+    
+    -- Animasi progress bar dari 0% ke 100%
+    TweenService:Create(ProgressFill, TweenInfo.new(0.8, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+        Size = UDim2.new(1, 0, 1, 0)
+    }):Play()
+    
+    -- Tunggu animasi selesai, tutup overlay, lalu jalankan aksi aslinya
+    task.wait(0.9)
+    ExecOverlay.Visible = false
+    
+    if callback then
+        callback()
+    end
+end
+
 -- ==================== KONFIGURASI WARNA ====================
 local Colors = {
     Background = Color3.fromRGB(12, 12, 14),
