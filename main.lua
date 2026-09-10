@@ -1,7 +1,7 @@
 --[[
     Script: Burgerz Automation Hub
     UI: Urban UI Library (Red Theme)
-    Fitur: Kill Aura (NPC, Cop, Customer), Auto Serve, Auto Task
+    Fitur: Aimbot, FOV, Snapline, Smoothing, Body Part
 ]]
 
 -- 1. Load Urban UI Library
@@ -10,202 +10,152 @@ local WIND = loadstring(game:HttpGet("https://raw.githubusercontent.com/vortex-p
 -- 2. Buat Window Utama
 local Window = WIND:CreateWindow({
     Title = "BURGERZ HUB",
-    SubTitle = "",
+    SubTitle = "Aimbot Edition",
     Size = UDim2.new(0, 520, 0, 350),
     Icon = "rbxassetid://80788381547970",
     FloatIcon = "rbxassetid://80788381547970",
     FloatIconSize = 36
 })
 
--- 3. Buat Tabs
-local MainTab = Window:CreateTab("Utama")
-local AutoTab = Window:CreateTab("Auto")
-local AuraTab = Window:CreateTab("Kill Aura")
+-- 3. Buat Tab Aimbot (sesuai gambar kamu)
+local MainTab = Window:CreateTab("aimbot")
+local AimbotSec = MainTab:AddSection("Aimbot Settings")
 
--- ==================== TAB UTAMA ====================
-local MainSec = MainTab:AddSection("Informasi")
+-- ==================== KONFIGURASI DEFAULT ====================
+getgenv().Aimbot_Enabled = false
+getgenv().Aimbot_FOV = 120
+getgenv().Aimbot_Smoothing = 0.15
+getgenv().Aimbot_BodyPart = "Head"
+getgenv().Aimbot_ShowSnapline = true
+getgenv().Aimbot_TargetNPC = true
 
-MainSec:AddParagraph("Selamat Datang", "Aktifkan fitur di tab Auto dan Kill Aura. Gunakan tombol Panic untuk mematikan semua fitur.")
+-- ==================== DRAWING (FOV & SNAPLINE) ====================
+local hasDrawing = pcall(function() return Drawing.new("Circle") end)
+local fovCircle, snapline
 
-MainSec:AddButton("Panic (Matikan Semua)", function()
-    -- Matikan semua flag
-    getgenv().AutoServe = false
-    getgenv().AutoTask = false
-    getgenv().AuraNPC = false
-    getgenv().AuraCop = false
-    getgenv().AuraCustomer = false
-    WIND:Notify({
-        Title = "Panic",
-        Content = "Semua fitur dimatikan!",
-        Duration = 3
-    })
-end)
+if hasDrawing then
+    fovCircle = Drawing.new("Circle")
+    fovCircle.Thickness = 1
+    fovCircle.NumSides = 60
+    fovCircle.Radius = getgenv().Aimbot_FOV
+    fovCircle.Filled = false
+    fovCircle.Color = Color3.fromRGB(255, 50, 50)
+    fovCircle.Visible = false
+    fovCircle.Transparency = 1
 
--- ==================== TAB AUTO ====================
-local AutoSec = AutoTab:AddSection("Otomatisasi")
+    snapline = Drawing.new("Line")
+    snapline.Thickness = 2
+    snapline.Color = Color3.fromRGB(255, 50, 50)
+    snapline.Visible = false
+    snapline.Transparency = 1
+else
+    warn("Executor tidak support Drawing API. FOV & Snapline tidak akan tampil.")
+end
 
-AutoSec:AddToggle("Auto Siapkan Hidangan", false, function(state)
-    getgenv().AutoServe = state
-    if state then
-        WIND:Notify({Title = "Auto Serve", Content = "Auto Siapkan Hidangan: ON", Duration = 2})
-    else
-        WIND:Notify({Title = "Auto Serve", Content = "Auto Siapkan Hidangan: OFF", Duration = 2})
-    end
-end)
+-- ==================== FUNGSI CARI TARGET ====================
+local function getClosestTarget()
+    local myChar = game.Players.LocalPlayer.Character
+    if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return nil, nil end
 
-AutoSec:AddToggle("Auto Ambil Task", false, function(state)
-    getgenv().AutoTask = state
-    if state then
-        WIND:Notify({Title = "Auto Task", Content = "Auto Ambil Task: ON", Duration = 2})
-    else
-        WIND:Notify({Title = "Auto Task", Content = "Auto Ambil Task: OFF", Duration = 2})
-    end
-end)
+    local screenSize = workspace.CurrentCamera.ViewportSize
+    local centerX, centerY = screenSize.X / 2, screenSize.Y / 2
 
--- ==================== TAB KILL AURA ====================
-local AuraSec = AuraTab:AddSection("Target Kill Aura")
+    local closestPart = nil
+    local shortestDist = getgenv().Aimbot_FOV
+    local targetScreenPos = nil
 
-AuraSec:AddToggle("Kill Aura NPC", false, function(state)
-    getgenv().AuraNPC = state
-end)
-
-AuraSec:AddToggle("Kill Aura Cop", false, function(state)
-    getgenv().AuraCop = state
-end)
-
-AuraSec:AddToggle("Kill Aura Customer", false, function(state)
-    getgenv().AuraCustomer = state
-end)
-
-AuraSec:AddSlider("Jarak Kill Aura", 5, 100, 30, function(value)
-    getgenv().AuraRange = value
-end)
-
--- ==================== LOGIKA KILL AURA ====================
--- Fungsi untuk mendapatkan semua target berdasarkan nama/tag
-local function getTargets()
-    local targets = {}
-    local range = getgenv().AuraRange or 30
-    local player = game.Players.LocalPlayer
-    local char = player.Character
-    if not char then return targets end
-    local root = char:FindFirstChild("HumanoidRootPart")
-    if not root then return targets end
-
-    -- Cari di Workspace
     for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") then
-            local humanoid = obj.Humanoid
-            if humanoid.Health > 0 then
-                local objRoot = obj:FindFirstChild("HumanoidRootPart")
-                if objRoot then
-                    local dist = (objRoot.Position - root.Position).Magnitude
-                    if dist <= range then
-                        -- Cek tipe target berdasarkan nama/tag
-                        local name = obj.Name:lower()
-                        local isNPC = name:find("npc") or obj:GetAttribute("NPC")
-                        local isCop = name:find("cop") or name:find("police") or obj:GetAttribute("Cop")
-                        local isCustomer = name:find("customer") or name:find("pelanggan") or obj:GetAttribute("Customer")
+        if obj:IsA("Model") and obj ~= myChar then
+            local humanoid = obj:FindFirstChildOfClass("Humanoid")
+            if humanoid and humanoid.Health > 0 then
+                local part = obj:FindFirstChild(getgenv().Aimbot_BodyPart)
+                if not part then part = obj:FindFirstChild("HumanoidRootPart") end
+                if not part then continue end
 
-                        if (getgenv().AuraNPC and isNPC) or
-                           (getgenv().AuraCop and isCop) or
-                           (getgenv().AuraCustomer and isCustomer) then
-                            table.insert(targets, {model = obj, humanoid = humanoid})
+                local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(part.Position)
+                if onScreen then
+                    local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(centerX, centerY)).Magnitude
+                    if dist <= getgenv().Aimbot_FOV and dist < shortestDist then
+                        -- Filter target: hanya NPC/Cop/Customer
+                        local name = obj.Name:lower()
+                        if getgenv().Aimbot_TargetNPC then
+                            if name:find("npc") or name:find("cop") or name:find("customer") or name:find("pelanggan") then
+                                shortestDist = dist
+                                closestPart = part
+                                targetScreenPos = Vector2.new(screenPos.X, screenPos.Y)
+                            end
                         end
                     end
                 end
             end
         end
     end
-    return targets
+    return closestPart, targetScreenPos
 end
 
--- Loop Kill Aura
-task.spawn(function()
-    while task.wait(0.1) do
-        if getgenv().AuraNPC or getgenv().AuraCop or getgenv().AuraCustomer then
-            local targets = getTargets()
-            for _, target in ipairs(targets) do
-                -- Metode damage: bisa menggunakan FireServer atau langsung set Health
-                -- Jika game menggunakan RemoteEvent, ganti dengan yang sesuai.
-                -- Contoh: game:GetService("ReplicatedStorage").Remotes.Damage:FireServer(target.model)
-                if target.humanoid then
-                    -- 1. Tentukan RemoteEvent-nya di luar loop (sesuaikan path-nya!)
-local MeleeEvent = game:GetService("ReplicatedStorage").Remotes.MeleeHitEvent
+-- ==================== LOOP AIMBOT ====================
+game:GetService("RunService").RenderStepped:Connect(function()
+    local screenSize = workspace.CurrentCamera.ViewportSize
+    local centerX, centerY = screenSize.X / 2, screenSize.Y / 2
 
--- 2. Di dalam loop Kill Aura, ganti metode damage menjadi:
-task.spawn(function()
-    while task.wait(0.15) do -- Jeda 0.15 detik biar aman dari anti-cheat
-        if getgenv().AuraNPC or getgenv().AuraCop or getgenv().AuraCustomer then
-            local targets = getTargets()
-            for _, target in ipairs(targets) do
-                if target.model and target.model:FindFirstChild("HumanoidRootPart") then
-                    
-                    -- Kirim data persis seperti log Remote Spy kamu tadi
-                    MeleeEvent:FireServer(
-                        target.model, -- Argumen 1: Model NPC
-                        target.model.HumanoidRootPart.Position, -- Argumen 2: Posisi NPC
-                        Vector3.new(0, 0, 0), -- Argumen 3: Arah (bisa dikosongkan)
-                        999 -- Argumen 4: Damage besar biar langsung mati
-                    )
-                    
-                end
-            end
+    -- Update FOV Circle
+    if fovCircle then
+        fovCircle.Position = Vector2.new(centerX, centerY)
+        fovCircle.Radius = getgenv().Aimbot_FOV
+        fovCircle.Visible = getgenv().Aimbot_Enabled
+    end
+
+    if not getgenv().Aimbot_Enabled then
+        if snapline then snapline.Visible = false end
+        return
+    end
+
+    local targetPart, targetScreenPos = getClosestTarget()
+
+    if targetPart then
+        if snapline and getgenv().Aimbot_ShowSnapline then
+            snapline.From = Vector2.new(centerX, centerY)
+            snapline.To = targetScreenPos
+            snapline.Visible = true
+        elseif snapline then
+            snapline.Visible = false
         end
+
+        local targetCFrame = CFrame.lookAt(workspace.CurrentCamera.CFrame.Position, targetPart.Position)
+        workspace.CurrentCamera.CFrame = workspace.CurrentCamera.CFrame:Lerp(targetCFrame, getgenv().Aimbot_Smoothing)
+    else
+        if snapline then snapline.Visible = false end
     end
 end)
 
--- ==================== LOGIKA AUTO SERVE & AUTO TASK ====================
--- Fungsi untuk mencari ProximityPrompt berdasarkan nama
-local function findPrompts(keywords)
-    local found = {}
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") then
-            local actionText = obj.ActionText:lower()
-            for _, keyword in ipairs(keywords) do
-                if actionText:find(keyword) then
-                    table.insert(found, obj)
-                    break
-                end
-            end
-        end
-    end
-    return found
-end
+-- ==================== UI UNTUK AIMBOT ====================
 
--- Loop Auto Serve
-task.spawn(function()
-    while task.wait(0.5) do
-        if getgenv().AutoServe then
-            local prompts = findPrompts({"serve", "siapkan", "hidangkan", "deliver", "order"})
-            for _, prompt in ipairs(prompts) do
-                if prompt.Enabled then
-                    fireproximityprompt(prompt)
-                    task.wait(0.2)
-                end
-            end
-        end
-    end
+AimbotSec:AddToggle("Enable Aimbot", false, function(state)
+    getgenv().Aimbot_Enabled = state
 end)
 
--- Loop Auto Task
-task.spawn(function()
-    while task.wait(1) do
-        if getgenv().AutoTask then
-            local prompts = findPrompts({"task", "ambil", "tugas", "order", "pesanan"})
-            for _, prompt in ipairs(prompts) do
-                if prompt.Enabled then
-                    fireproximityprompt(prompt)
-                    task.wait(0.2)
-                end
-            end
-        end
-    end
+AimbotSec:AddSlider("FOV Size", 10, 500, 120, function(value)
+    getgenv().Aimbot_FOV = value
 end)
 
--- Notifikasi awal
+AimbotSec:AddSlider("Smoothing", 1, 100, 15, function(value)
+    getgenv().Aimbot_Smoothing = value / 100 -- Ubah 1-100 jadi 0.01 - 1
+end)
+
+AimbotSec:AddDropdown("Body Part", {"Head", "UpperTorso", "HumanoidRootPart", "LowerTorso"}, function(value)
+    getgenv().Aimbot_BodyPart = value
+end)
+
+AimbotSec:AddToggle("Show Snapline", true, function(state)
+    getgenv().Aimbot_ShowSnapline = state
+end)
+
+AimbotSec:AddToggle("Target NPC/Cop/Customer", true, function(state)
+    getgenv().Aimbot_TargetNPC = state
+end)
+
 WIND:Notify({
     Title = "Burgerz Hub",
-    Content = "Script berhasil dimuat!",
+    Content = "Aimbot Loaded!",
     Duration = 5
 })
