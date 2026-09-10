@@ -10,7 +10,7 @@ local WIND = loadstring(game:HttpGet("https://raw.githubusercontent.com/vortex-p
 -- 2. Buat Window Utama
 local Window = WIND:CreateWindow({
     Title = "BURGERZ HUB",
-    SubTitle = "by AI Assistant",
+    SubTitle = "",
     Size = UDim2.new(0, 520, 0, 350),
     Icon = "rbxassetid://80788381547970",
     FloatIcon = "rbxassetid://80788381547970",
