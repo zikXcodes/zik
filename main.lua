@@ -1,4 +1,15 @@
-local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+-- =====================
+-- WINDUI LOADER WITH ERROR HANDLING
+-- =====================
+local WindUI
+local success, err = pcall(function()
+    WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+end)
+
+if not success or not WindUI then
+    error("Failed to load WindUI: " .. tostring(err))
+    return
+end
 
 local Window = WindUI:CreateWindow({
     Title = "Zik Burgerz Cheat",
@@ -64,17 +75,21 @@ local function getHRP()
 end
 
 local function getDistance(pos1, pos2)
+    if not pos1 or not pos2 then return math.huge end
     return (pos1 - pos2).Magnitude
 end
 
 local function notify(title, content, duration)
+    if not WindUI then return end
     duration = duration or 3
-    WindUI:Notify({
-        Title = title,
-        Content = content,
-        Icon = "solar:bell-bold",
-        Duration = duration,
-    })
+    pcall(function()
+        WindUI:Notify({
+            Title = title,
+            Content = content,
+            Icon = "solar:bell-bold",
+            Duration = duration,
+        })
+    end)
 end
 
 -- =====================
@@ -100,8 +115,11 @@ Tab:Slider({
     Callback = function(value)
         getgenv().ZikSettings.WalkSpeed = value
         local hrp = getHRP()
-        if hrp and hrp.Parent:FindFirstChildOfClass("Humanoid") then
-            hrp.Parent:FindFirstChildOfClass("Humanoid").WalkSpeed = value
+        if hrp and hrp.Parent then
+            local humanoid = hrp.Parent:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.WalkSpeed = value
+            end
         end
     end,
 })
@@ -116,8 +134,11 @@ Tab:Slider({
     },
     Callback = function(value)
         local hrp = getHRP()
-        if hrp and hrp.Parent:FindFirstChildOfClass("Humanoid") then
-            hrp.Parent:FindFirstChildOfClass("Humanoid").JumpPower = value
+        if hrp and hrp.Parent then
+            local humanoid = hrp.Parent:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.JumpPower = value
+            end
         end
     end,
 })
@@ -128,13 +149,14 @@ Tab:Button({
     Title = "Infinite Jump",
     Icon = "jump",
     Callback = function()
-        local jumped = false
         UserInputService.InputBegan:Connect(function(input, gameProcessed)
             if gameProcessed then return end
             if input.KeyCode == Enum.KeyCode.Space then
-                local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                if humanoid then
-                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                if LocalPlayer.Character then
+                    local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                    if humanoid then
+                        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                    end
                 end
             end
         end)
@@ -160,7 +182,7 @@ AutoTab:Toggle({
                     local hrp = getHRP()
                     if not hrp then
                         wait(0.1)
-                        goto continue
+                        continue
                     end
 
                     local success, err = pcall(function()
@@ -168,10 +190,16 @@ AutoTab:Toggle({
                         for _, obj in pairs(workspace:GetDescendants()) do
                             if not getgenv().ZikSettings.AutoCook then break end
                             
-                            if obj:IsA("BasePart") or obj:IsA("Model") then
+                            if (obj:IsA("BasePart") or obj:IsA("Model")) and obj.Parent then
                                 local name = obj.Name:lower()
                                 if name:find("raw") or name:find("uncook") or name:find("patty") or name:find("meat") then
-                                    local pos = obj:IsA("BasePart") and obj.Position or obj:FindFirstChildWhichIsA("BasePart") and obj:FindFirstChildWhichIsA("BasePart").Position
+                                    local pos
+                                    if obj:IsA("BasePart") then
+                                        pos = obj.Position
+                                    else
+                                        local part = obj:FindFirstChildWhichIsA("BasePart")
+                                        if part then pos = part.Position end
+                                    end
                                     
                                     if pos and getDistance(pos, hrp.Position) < 50 then
                                         -- Teleport to item
@@ -180,13 +208,16 @@ AutoTab:Toggle({
                                         
                                         -- Try to pick up
                                         if obj:IsA("BasePart") then
-                                            local playerPart = LocalPlayer.Character:FindFirstChildWhichIsA("BasePart")
-                                            if playerPart then
-                                                pcall(function()
-                                                    firetouchinterest(obj, playerPart, 0)
-                                                    wait(0.1)
-                                                    firetouchinterest(obj, playerPart, 1)
-                                                end)
+                                            local char = LocalPlayer.Character
+                                            if char then
+                                                local playerPart = char:FindFirstChildWhichIsA("BasePart")
+                                                if playerPart then
+                                                    pcall(function()
+                                                        firetouchinterest(obj, playerPart, 0)
+                                                        wait(0.1)
+                                                        firetouchinterest(obj, playerPart, 1)
+                                                    end)
+                                                end
                                             end
                                         end
                                     end
@@ -197,8 +228,6 @@ AutoTab:Toggle({
                     
                     if not success then warn("AutoCook Error:", err) end
                     wait(getgenv().ZikSettings.AutoCookSpeed)
-                    
-                    ::continue::
                 end
             end)
             notify("Auto Cook", "Enabled ✓", 3)
@@ -237,19 +266,19 @@ AuraTab:Toggle({
                     local hrp = getHRP()
                     if not hrp or not hrp.Parent then
                         wait(0.2)
-                        goto continue_aura
+                        continue
                     end
 
                     local success, err = pcall(function()
                         for _, model in pairs(workspace:GetDescendants()) do
                             if not getgenv().ZikSettings.KillAura then break end
                             
-                            if model:IsA("Model") and model ~= LocalPlayer.Character then
+                            if model:IsA("Model") and model ~= LocalPlayer.Character and model.Parent then
                                 local name = model.Name:lower()
                                 local isTarget = false
                                 
                                 -- Check target types
-                                if getgenv().ZikSettings.KillAuraTargets.npc and (name:find("npc") or name:find("npc")) then
+                                if getgenv().ZikSettings.KillAuraTargets.npc and name:find("npc") then
                                     isTarget = true
                                 end
                                 if getgenv().ZikSettings.KillAuraTargets.cop and name:find("cop") then
@@ -278,8 +307,6 @@ AuraTab:Toggle({
                     
                     if not success then warn("KillAura Error:", err) end
                     wait(0.15)
-                    
-                    ::continue_aura::
                 end
             end)
             notify("Kill Aura", "Enabled ✓", 3)
@@ -352,7 +379,7 @@ TeleportTab:Button({
         local nearestDist = math.huge
         
         for _, model in pairs(workspace:GetDescendants()) do
-            if model:IsA("Model") and model ~= LocalPlayer.Character then
+            if model:IsA("Model") and model ~= LocalPlayer.Character and model.Parent then
                 local name = model.Name:lower()
                 if name:find("npc") or name:find("customer") then
                     local targetHRP = model:FindFirstChild("HumanoidRootPart")
@@ -387,10 +414,17 @@ TeleportTab:Button({
         local nearestDist = math.huge
         
         for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("BasePart") or obj:IsA("Model") then
+            if (obj:IsA("BasePart") or obj:IsA("Model")) and obj.Parent then
                 local name = obj.Name:lower()
                 if name:find("burger") or name:find("patty") or name:find("food") or name:find("raw") then
-                    local pos = obj:IsA("BasePart") and obj.Position or obj:FindFirstChildWhichIsA("BasePart") and obj:FindFirstChildWhichIsA("BasePart").Position
+                    local pos
+                    if obj:IsA("BasePart") then
+                        pos = obj.Position
+                    else
+                        local part = obj:FindFirstChildWhichIsA("BasePart")
+                        if part then pos = part.Position end
+                    end
+                    
                     if pos then
                         local dist = getDistance(pos, hrp.Position)
                         if dist < nearestDist then
@@ -424,14 +458,14 @@ MiscTab:Toggle({
         if not char then return end
         
         if state then
-            for _, part in pairs(char:FindFirstChildOfClass("Humanoid").Parent:GetDescendants()) do
+            for _, part in pairs(char:GetDescendants()) do
                 if part:IsA("BasePart") then
                     part.CanCollide = false
                 end
             end
             notify("No Clip", "Enabled ✓", 2)
         else
-            for _, part in pairs(char:FindFirstChildOfClass("Humanoid").Parent:GetDescendants()) do
+            for _, part in pairs(char:GetDescendants()) do
                 if part:IsA("BasePart") then
                     part.CanCollide = true
                 end
