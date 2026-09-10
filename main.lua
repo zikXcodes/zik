@@ -1,803 +1,1072 @@
--- ======================================================
--- IZZ HUB UI V2 (Ultra Cool Edition - Frontend Only)
--- Dibuat oleh: bl_ai v1.0
--- Fitur: Toggle Button, Tab System, Search, Notifications
--- ======================================================
+--========================================================--
+--                    IZZ HUB UI                          --
+--          Premium Roblox Hub UI Template                --
+--          Mobile • PC • Tablet • Responsive             --
+--========================================================--
 
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
--- Hapus GUI lama jika ada
-local oldGui = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("IZZ_HUB_UI_V2")
-if oldGui then
-    oldGui:Destroy()
-end
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
 
--- ==================== EXECUTING ANIMATION SYSTEM ====================
-local ExecOverlay = Instance.new("Frame")
-ExecOverlay.Name = "ExecOverlay"
-ExecOverlay.Size = UDim2.new(1, 0, 1, 0)
-ExecOverlay.Position = UDim2.new(0, 0, 0, 0)
-ExecOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-ExecOverlay.BackgroundTransparency = 0.5
-ExecOverlay.BorderSizePixel = 0
-ExecOverlay.ZIndex = 50
-ExecOverlay.Visible = false
-ExecOverlay.Parent = MainFrame
-createCorner(ExecOverlay, 14)
+--========================================================--
+-- CONFIG
+--========================================================--
 
-local ExecText = Instance.new("TextLabel")
-ExecText.Size = UDim2.new(1, 0, 0, 30)
-ExecText.Position = UDim2.new(0, 0, 0.5, -50)
-ExecText.BackgroundTransparency = 1
-ExecText.Text = "⚡ Executing..."
-ExecText.TextColor3 = Colors.Accent
-ExecText.Font = Enum.Font.GothamBold
-ExecText.TextSize = 18
-ExecText.ZIndex = 51
-ExecText.Parent = ExecOverlay
+local CONFIG = {
+    Name = "IZZ HUB",
+    Version = "v1.0.0",
 
-local ProgressBg = Instance.new("Frame")
-ProgressBg.Size = UDim2.new(0.6, 0, 0, 6)
-ProgressBg.Position = UDim2.new(0.2, 0, 0.5, 10)
-ProgressBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-ProgressBg.BorderSizePixel = 0
-ProgressBg.ZIndex = 51
-ProgressBg.Parent = ExecOverlay
-createCorner(ProgressBg, 3)
+    Background = Color3.fromRGB(7, 7, 10),
+    Card = Color3.fromRGB(15, 15, 20),
+    Card2 = Color3.fromRGB(20, 20, 26),
 
-local ProgressFill = Instance.new("Frame")
-ProgressFill.Size = UDim2.new(0, 0, 1, 0)
-ProgressFill.BackgroundColor3 = Colors.Accent
-ProgressFill.BorderSizePixel = 0
-ProgressFill.ZIndex = 52
-ProgressFill.Parent = ProgressBg
-createCorner(ProgressFill, 3)
+    Red = Color3.fromRGB(255, 0, 60),
+    Red2 = Color3.fromRGB(255, 23, 68),
 
--- Gradient Progress Bar biar makin keren
-local progressGradient = Instance.new("UIGradient")
-progressGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Colors.AccentDark),
-    ColorSequenceKeypoint.new(1, Colors.AccentHover)
-})
-progressGradient.Rotation = 0
-progressGradient.Parent = ProgressFill
+    Text = Color3.fromRGB(255, 255, 255),
+    Muted = Color3.fromRGB(135, 135, 145),
 
--- Fungsi Animasi Execute
-local function playExecuteAnimation(callback)
-    if ExecOverlay.Visible then return end -- Cegah spam klik
-    
-    ExecOverlay.Visible = true
-    ProgressFill.Size = UDim2.new(0, 0, 1, 0)
-    
-    -- Efek suara (bisa diganti kalau tuan punya asset ID lain)
-    playSound(Sounds.Click, 0.6)
-    
-    -- Animasi progress bar dari 0% ke 100%
-    TweenService:Create(ProgressFill, TweenInfo.new(0.8, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-        Size = UDim2.new(1, 0, 1, 0)
-    }):Play()
-    
-    -- Tunggu animasi selesai, tutup overlay, lalu jalankan aksi aslinya
-    task.wait(0.9)
-    ExecOverlay.Visible = false
-    
-    if callback then
-        callback()
-    end
-end
-
--- ==================== KONFIGURASI WARNA ====================
-local Colors = {
-    Background = Color3.fromRGB(12, 12, 14),
-    Sidebar = Color3.fromRGB(18, 18, 22),
-    Accent = Color3.fromRGB(220, 30, 40),
-    AccentHover = Color3.fromRGB(255, 50, 60),
-    AccentDark = Color3.fromRGB(150, 15, 25),
-    Text = Color3.fromRGB(245, 245, 245),
-    TextDim = Color3.fromRGB(140, 140, 150),
-    ItemBg = Color3.fromRGB(26, 26, 32),
-    ItemHover = Color3.fromRGB(40, 40, 48),
-    ToggleOn = Color3.fromRGB(220, 30, 40),
-    ToggleOff = Color3.fromRGB(60, 60, 70),
-    NotificationBg = Color3.fromRGB(30, 30, 36)
+    Border = Color3.fromRGB(38, 38, 45),
 }
 
--- ==================== VARIABEL UTAMA ====================
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "IZZ_HUB_UI_V2"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+--========================================================--
+-- CLEAN OLD UI
+--========================================================--
 
--- ==================== FUNGSI UTILITAS ====================
-local function createCorner(parent, radius)
+local Old = PlayerGui:FindFirstChild("IZZ_HUB")
+if Old then
+    Old:Destroy()
+end
+
+--========================================================--
+-- HELPERS
+--========================================================--
+
+local function New(class, properties)
+    local object = Instance.new(class)
+
+    for property, value in pairs(properties or {}) do
+        object[property] = value
+    end
+
+    return object
+end
+
+local function Corner(parent, radius)
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, radius)
+    corner.CornerRadius = UDim.new(0, radius or 8)
     corner.Parent = parent
     return corner
 end
 
-local function createStroke(parent, color, thickness, transparency)
+local function Stroke(parent, color, transparency)
     local stroke = Instance.new("UIStroke")
-    stroke.Color = color
-    stroke.Thickness = thickness or 1
+    stroke.Color = color or CONFIG.Border
     stroke.Transparency = transparency or 0
+    stroke.Thickness = 1
     stroke.Parent = parent
     return stroke
 end
 
--- Efek Suara
-local Sounds = {
-    Click = "rbxassetid://6895079853",
-    Open = "rbxassetid://6895079853",
-    Close = "rbxassetid://6895079853",
-    Hover = "rbxassetid://6895079853"
-}
-
-local function playSound(id, volume)
-    local s = Instance.new("Sound")
-    s.SoundId = id
-    s.Volume = volume or 0.5
-    s.Parent = ScreenGui
-    s:Play()
-    task.delay(2, function() s:Destroy() end)
+local function Padding(parent, amount)
+    local padding = Instance.new("UIPadding")
+    padding.PaddingTop = UDim.new(0, amount)
+    padding.PaddingBottom = UDim.new(0, amount)
+    padding.PaddingLeft = UDim.new(0, amount)
+    padding.PaddingRight = UDim.new(0, amount)
+    padding.Parent = parent
+    return padding
 end
 
--- ==================== TOGGLE BUTTON (FLOATING) ====================
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Name = "ToggleButton"
-ToggleButton.Size = UDim2.new(0, 55, 0, 55)
-ToggleButton.Position = UDim2.new(0, 20, 0.5, -27)
-ToggleButton.BackgroundColor3 = Colors.Accent
-ToggleButton.Text = "👑"
-ToggleButton.TextColor3 = Colors.Text
-ToggleButton.Font = Enum.Font.GothamBold
-ToggleButton.TextSize = 24
-ToggleButton.Visible = false
-ToggleButton.Active = true
-ToggleButton.Draggable = true
-ToggleButton.Parent = ScreenGui
+local function Tween(object, duration, properties)
+    return TweenService:Create(
+        object,
+        TweenInfo.new(
+            duration,
+            Enum.EasingStyle.Quint,
+            Enum.EasingDirection.Out
+        ),
+        properties
+    )
+end
 
-createCorner(ToggleButton, 27)
-local toggleStroke = createStroke(ToggleButton, Colors.AccentHover, 2, 0.3)
+--========================================================--
+-- SCREEN GUI
+--========================================================--
 
--- Gradient untuk Toggle Button
-local toggleGradient = Instance.new("UIGradient")
-toggleGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Colors.Accent),
-    ColorSequenceKeypoint.new(1, Colors.AccentDark)
+local ScreenGui = New("ScreenGui", {
+    Name = "IZZ_HUB",
+    Parent = PlayerGui,
+    ResetOnSpawn = false,
+    ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 })
-toggleGradient.Rotation = 45
-toggleGradient.Parent = ToggleButton
 
--- Animasi Hover Toggle Button
-ToggleButton.MouseEnter:Connect(function()
-    TweenService:Create(ToggleButton, TweenInfo.new(0.2), {Size = UDim2.new(0, 60, 0, 60)}):Play()
-    TweenService:Create(toggleStroke, TweenInfo.new(0.2), {Transparency = 0}):Play()
-end)
+--========================================================--
+-- MAIN WINDOW
+--========================================================--
 
-ToggleButton.MouseLeave:Connect(function()
-    TweenService:Create(ToggleButton, TweenInfo.new(0.2), {Size = UDim2.new(0, 55, 0, 55)}):Play()
-    TweenService:Create(toggleStroke, TweenInfo.new(0.2), {Transparency = 0.3}):Play()
-end)
+local Main = New("Frame", {
+    Parent = ScreenGui,
 
--- ==================== MAIN FRAME ====================
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 650, 0, 450)
-MainFrame.Position = UDim2.new(0.5, -325, 0.5, -225)
-MainFrame.BackgroundColor3 = Colors.Background
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.Visible = true
-MainFrame.Parent = ScreenGui
+    Size = UDim2.fromOffset(760, 480),
+    Position = UDim2.new(0.5, -380, 0.5, -240),
 
-createCorner(MainFrame, 14)
-local mainStroke = createStroke(MainFrame, Colors.Accent, 1, 0.4)
+    BackgroundColor3 = CONFIG.Background,
+    BorderSizePixel = 0,
 
--- Gradient Background Main Frame
-local mainGradient = Instance.new("UIGradient")
-mainGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 20, 25)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 12))
+    ClipsDescendants = true,
 })
-mainGradient.Rotation = 90
-mainGradient.Parent = MainFrame
 
--- ==================== SIDEBAR ====================
-local Sidebar = Instance.new("Frame")
-Sidebar.Name = "Sidebar"
-Sidebar.Size = UDim2.new(0, 160, 1, 0)
-Sidebar.BackgroundColor3 = Colors.Sidebar
-Sidebar.BorderSizePixel = 0
-Sidebar.Parent = MainFrame
+Corner(Main, 14)
+Stroke(Main, CONFIG.Border)
 
-createCorner(Sidebar, 14)
-local sidebarCover = Instance.new("Frame")
-sidebarCover.Size = UDim2.new(0, 10, 1, 0)
-sidebarCover.Position = UDim2.new(1, -10, 0, 0)
-sidebarCover.BackgroundColor3 = Colors.Sidebar
-sidebarCover.BorderSizePixel = 0
-sidebarCover.Parent = Sidebar
+--========================================================--
+-- TOP BAR
+--========================================================--
 
--- Logo Area
-local LogoFrame = Instance.new("Frame")
-LogoFrame.Size = UDim2.new(1, 0, 0, 70)
-LogoFrame.BackgroundTransparency = 1
-LogoFrame.Parent = Sidebar
+local TopBar = New("Frame", {
+    Parent = Main,
 
-local LogoText = Instance.new("TextLabel")
-LogoText.Size = UDim2.new(1, 0, 0, 30)
-LogoText.Position = UDim2.new(0, 0, 0, 18)
-LogoText.BackgroundTransparency = 1
-LogoText.Text = "👑 IZZ HUB"
-LogoText.TextColor3 = Colors.Accent
-LogoText.Font = Enum.Font.GothamBold
-LogoText.TextSize = 20
-LogoText.TextXAlignment = Enum.TextXAlignment.Center
-LogoText.Parent = LogoFrame
+    Size = UDim2.new(1, 0, 0, 58),
 
-local SubLogoText = Instance.new("TextLabel")
-SubLogoText.Size = UDim2.new(1, 0, 0, 15)
-SubLogoText.Position = UDim2.new(0, 0, 0, 45)
-SubLogoText.BackgroundTransparency = 1
-SubLogoText.Text = "Better • Faster • Stronger"
-SubLogoText.TextColor3 = Colors.TextDim
-SubLogoText.Font = Enum.Font.Gotham
-SubLogoText.TextSize = 9
-SubLogoText.TextXAlignment = Enum.TextXAlignment.Center
-SubLogoText.Parent = LogoFrame
+    BackgroundColor3 = CONFIG.Card,
+    BorderSizePixel = 0,
+})
 
--- Nav Container
-local NavContainer = Instance.new("Frame")
-NavContainer.Size = UDim2.new(1, 0, 1, -140)
-NavContainer.Position = UDim2.new(0, 0, 0, 80)
-NavContainer.BackgroundTransparency = 1
-NavContainer.Parent = Sidebar
+local Logo = New("TextLabel", {
+    Parent = TopBar,
 
-local NavLayout = Instance.new("UIListLayout")
-NavLayout.Padding = UDim.new(0, 4)
-NavLayout.SortOrder = Enum.SortOrder.LayoutOrder
-NavLayout.Parent = NavContainer
+    BackgroundTransparency = 1,
 
-local NavPadding = Instance.new("UIPadding")
-NavPadding.PaddingLeft = UDim.new(0, 12)
-NavPadding.PaddingRight = UDim.new(0, 12)
-NavPadding.Parent = NavContainer
+    Position = UDim2.fromOffset(20, 8),
+    Size = UDim2.fromOffset(180, 24),
 
--- Status Area
-local StatusFrame = Instance.new("Frame")
-StatusFrame.Size = UDim2.new(1, 0, 0, 50)
-StatusFrame.Position = UDim2.new(0, 0, 1, -55)
-StatusFrame.BackgroundTransparency = 1
-StatusFrame.Parent = Sidebar
+    Font = Enum.Font.GothamBold,
+    Text = "IZZ HUB",
 
-local StatusDot = Instance.new("Frame")
-StatusDot.Size = UDim2.new(0, 8, 0, 8)
-StatusDot.Position = UDim2.new(0, 18, 0, 12)
-StatusDot.BackgroundColor3 = Color3.fromRGB(50, 220, 50)
-StatusDot.BorderSizePixel = 0
-StatusDot.Parent = StatusFrame
-createCorner(StatusDot, 4)
+    TextColor3 = CONFIG.Text,
+    TextSize = 20,
 
-local StatusText = Instance.new("TextLabel")
-StatusText.Size = UDim2.new(1, -35, 0, 15)
-StatusText.Position = UDim2.new(0, 32, 0, 9)
-StatusText.BackgroundTransparency = 1
-StatusText.Text = "Loader Ready"
-StatusText.TextColor3 = Colors.Text
-StatusText.Font = Enum.Font.GothamMedium
-StatusText.TextSize = 11
-StatusText.TextXAlignment = Enum.TextXAlignment.Left
-StatusText.Parent = StatusFrame
+    TextXAlignment = Enum.TextXAlignment.Left,
+})
 
-local VersionText = Instance.new("TextLabel")
-VersionText.Size = UDim2.new(1, -35, 0, 15)
-VersionText.Position = UDim2.new(0, 32, 0, 25)
-VersionText.BackgroundTransparency = 1
-VersionText.Text = "v2.0.0 • bl_ai"
-VersionText.TextColor3 = Colors.TextDim
-VersionText.Font = Enum.Font.Gotham
-VersionText.TextSize = 9
-VersionText.TextXAlignment = Enum.TextXAlignment.Left
-VersionText.Parent = StatusFrame
+local Version = New("TextLabel", {
+    Parent = TopBar,
 
--- ==================== CONTENT AREA ====================
-local ContentFrame = Instance.new("Frame")
-ContentFrame.Name = "ContentFrame"
-ContentFrame.Size = UDim2.new(1, -160, 1, 0)
-ContentFrame.Position = UDim2.new(0, 160, 0, 0)
-ContentFrame.BackgroundTransparency = 1
-ContentFrame.Parent = MainFrame
+    BackgroundTransparency = 1,
 
--- Header Content
-local HeaderFrame = Instance.new("Frame")
-HeaderFrame.Size = UDim2.new(1, 0, 0, 70)
-HeaderFrame.BackgroundTransparency = 1
-HeaderFrame.Parent = ContentFrame
+    Position = UDim2.fromOffset(21, 31),
+    Size = UDim2.fromOffset(100, 18),
 
-local TitleText = Instance.new("TextLabel")
-TitleText.Size = UDim2.new(0, 300, 0, 25)
-TitleText.Position = UDim2.new(0, 25, 0, 15)
-TitleText.BackgroundTransparency = 1
-TitleText.Text = "Home"
-TitleText.TextColor3 = Colors.Text
-TitleText.Font = Enum.Font.GothamBold
-TitleText.TextSize = 20
-TitleText.TextXAlignment = Enum.TextXAlignment.Left
-TitleText.Parent = HeaderFrame
+    Font = Enum.Font.Gotham,
+    Text = CONFIG.Version,
 
-local SubTitleText = Instance.new("TextLabel")
-SubTitleText.Size = UDim2.new(0, 300, 0, 15)
-SubTitleText.Position = UDim2.new(0, 25, 0, 42)
-SubTitleText.BackgroundTransparency = 1
-SubTitleText.Text = "Selamat datang di IZZ HUB"
-SubTitleText.TextColor3 = Colors.TextDim
-SubTitleText.Font = Enum.Font.Gotham
-SubTitleText.TextSize = 11
-SubTitleText.TextXAlignment = Enum.TextXAlignment.Left
-SubTitleText.Parent = HeaderFrame
+    TextColor3 = CONFIG.Muted,
+    TextSize = 11,
 
--- Search Bar
-local SearchBar = Instance.new("Frame")
-SearchBar.Size = UDim2.new(0, 180, 0, 32)
-SearchBar.Position = UDim2.new(1, -260, 0, 18)
-SearchBar.BackgroundColor3 = Colors.Sidebar
-SearchBar.BorderSizePixel = 0
-SearchBar.Parent = HeaderFrame
-createCorner(SearchBar, 8)
-createStroke(SearchBar, Colors.Accent, 1, 0.7)
+    TextXAlignment = Enum.TextXAlignment.Left,
+})
 
-local SearchIcon = Instance.new("TextLabel")
-SearchIcon.Size = UDim2.new(0, 30, 1, 0)
-SearchIcon.BackgroundTransparency = 1
-SearchIcon.Text = "🔍"
-SearchIcon.TextColor3 = Colors.TextDim
-SearchIcon.Font = Enum.Font.Gotham
-SearchIcon.TextSize = 14
-SearchIcon.Parent = SearchBar
+--========================================================--
+-- MINIMIZE BUTTON
+--========================================================--
 
-local SearchBox = Instance.new("TextBox")
-SearchBox.Size = UDim2.new(1, -35, 1, 0)
-SearchBox.Position = UDim2.new(0, 30, 0, 0)
-SearchBox.BackgroundTransparency = 1
-SearchBox.Text = ""
-SearchBox.PlaceholderText = "Cari..."
-SearchBox.PlaceholderColor3 = Colors.TextDim
-SearchBox.TextColor3 = Colors.Text
-SearchBox.Font = Enum.Font.Gotham
-SearchBox.TextSize = 12
-SearchBox.TextXAlignment = Enum.TextXAlignment.Left
-SearchBox.Parent = SearchBar
+local Minimize = New("TextButton", {
+    Parent = TopBar,
 
--- Minimize & Close Buttons
-local MinBtn = Instance.new("TextButton")
-MinBtn.Size = UDim2.new(0, 30, 0, 30)
-MinBtn.Position = UDim2.new(1, -60, 0, 18)
-MinBtn.BackgroundColor3 = Colors.Sidebar
-MinBtn.Text = "—"
-MinBtn.TextColor3 = Colors.Text
-MinBtn.Font = Enum.Font.GothamBold
-MinBtn.TextSize = 16
-MinBtn.Parent = HeaderFrame
-createCorner(MinBtn, 6)
+    BackgroundColor3 = CONFIG.Card2,
 
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position = UDim2.new(1, -25, 0, 18)
-CloseBtn.BackgroundColor3 = Colors.Accent
-CloseBtn.Text = "✕"
-CloseBtn.TextColor3 = Colors.Text
-CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 14
-CloseBtn.Parent = HeaderFrame
-createCorner(CloseBtn, 6)
+    Position = UDim2.new(1, -46, 0, 13),
+    Size = UDim2.fromOffset(32, 32),
 
--- ==================== SCROLLING LIST ====================
-local ScriptList = Instance.new("ScrollingFrame")
-ScriptList.Size = UDim2.new(1, -50, 1, -90)
-ScriptList.Position = UDim2.new(0, 25, 0, 80)
-ScriptList.BackgroundTransparency = 1
-ScriptList.BorderSizePixel = 0
-ScriptList.ScrollBarThickness = 4
-ScriptList.ScrollBarImageColor3 = Colors.Accent
-ScriptList.CanvasSize = UDim2.new(0, 0, 0, 0)
-ScriptList.Parent = ContentFrame
+    Text = "—",
 
-local ListLayout = Instance.new("UIListLayout")
-ListLayout.Padding = UDim.new(0, 8)
-ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-ListLayout.Parent = ScriptList
+    Font = Enum.Font.GothamBold,
+    TextSize = 18,
 
--- ==================== NOTIFICATION SYSTEM ====================
-local NotifFrame = Instance.new("Frame")
-NotifFrame.Size = UDim2.new(0, 250, 0, 50)
-NotifFrame.Position = UDim2.new(1, -270, 1, 20) -- Start hidden below
-NotifFrame.BackgroundColor3 = Colors.NotificationBg
-NotifFrame.BorderSizePixel = 0
-NotifFrame.Visible = false
-NotifFrame.Parent = MainFrame
-createCorner(NotifFrame, 8)
-createStroke(NotifFrame, Colors.Accent, 1, 0.5)
+    TextColor3 = CONFIG.Text,
 
-local NotifTitle = Instance.new("TextLabel")
-NotifTitle.Size = UDim2.new(1, -20, 0, 20)
-NotifTitle.Position = UDim2.new(0, 15, 0, 8)
-NotifTitle.BackgroundTransparency = 1
-NotifTitle.Text = "✅ Script Loaded"
-NotifTitle.TextColor3 = Colors.Text
-NotifTitle.Font = Enum.Font.GothamBold
-NotifTitle.TextSize = 13
-NotifTitle.TextXAlignment = Enum.TextXAlignment.Left
-NotifTitle.Parent = NotifFrame
+    AutoButtonColor = false,
+})
 
-local NotifDesc = Instance.new("TextLabel")
-NotifDesc.Size = UDim2.new(1, -20, 0, 15)
-NotifDesc.Position = UDim2.new(0, 15, 0, 28)
-NotifDesc.BackgroundTransparency = 1
-NotifDesc.Text = "Fitur berhasil dijalankan."
-NotifDesc.TextColor3 = Colors.TextDim
-NotifDesc.Font = Enum.Font.Gotham
-NotifDesc.TextSize = 10
-NotifDesc.TextXAlignment = Enum.TextXAlignment.Left
-NotifDesc.Parent = NotifFrame
+Corner(Minimize, 8)
 
-local function showNotification(title, desc)
-    NotifTitle.Text = title
-    NotifDesc.Text = desc
-    NotifFrame.Visible = true
-    NotifFrame.Position = UDim2.new(1, -270, 1, 20)
-    
-    TweenService:Create(NotifFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-        Position = UDim2.new(1, -270, 1, -70)
+Minimize.MouseEnter:Connect(function()
+    Tween(Minimize, 0.15, {
+        BackgroundColor3 = CONFIG.Red
     }):Play()
-    
-    task.delay(3, function()
-        TweenService:Create(NotifFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
-            Position = UDim2.new(1, -270, 1, 20)
+end)
+
+Minimize.MouseLeave:Connect(function()
+    Tween(Minimize, 0.15, {
+        BackgroundColor3 = CONFIG.Card2
+    }):Play()
+end)
+
+--========================================================--
+-- SIDEBAR
+--========================================================--
+
+local Sidebar = New("Frame", {
+    Parent = Main,
+
+    Position = UDim2.fromOffset(0, 58),
+    Size = UDim2.fromOffset(175, -58),
+
+    BackgroundColor3 = CONFIG.Card,
+    BorderSizePixel = 0,
+})
+
+Padding(Sidebar, 12)
+
+local SidebarLayout = New("UIListLayout", {
+    Parent = Sidebar,
+
+    Padding = UDim.new(0, 6),
+
+    SortOrder = Enum.SortOrder.LayoutOrder,
+})
+
+--========================================================--
+-- CONTENT
+--========================================================--
+
+local Content = New("Frame", {
+    Parent = Main,
+
+    Position = UDim2.fromOffset(175, 58),
+    Size = UDim2.new(1, -175, 1, -58),
+
+    BackgroundColor3 = CONFIG.Background,
+    BorderSizePixel = 0,
+})
+
+--========================================================--
+-- SCROLLING AREA
+--========================================================--
+
+local Scroll = New("ScrollingFrame", {
+    Parent = Content,
+
+    Position = UDim2.fromOffset(15, 15),
+    Size = UDim2.new(1, -30, 1, -30),
+
+    BackgroundTransparency = 1,
+
+    BorderSizePixel = 0,
+
+    ScrollBarThickness = 3,
+    ScrollBarImageColor3 = CONFIG.Red,
+
+    CanvasSize = UDim2.new(0, 0, 0, 0),
+
+    AutomaticCanvasSize = Enum.AutomaticSize.Y,
+})
+
+Padding(Scroll, 5)
+
+local Layout = New("UIListLayout", {
+    Parent = Scroll,
+
+    Padding = UDim.new(0, 10),
+
+    SortOrder = Enum.SortOrder.LayoutOrder,
+})
+
+--========================================================--
+-- PAGE SYSTEM
+--========================================================--
+
+local Pages = {}
+local CurrentPage
+
+local function CreatePage(name)
+    local Page = New("Frame", {
+        Parent = Scroll,
+
+        Name = name,
+
+        Size = UDim2.new(1, -10, 0, 0),
+
+        BackgroundTransparency = 1,
+
+        Visible = false,
+
+        AutomaticSize = Enum.AutomaticSize.Y,
+    })
+
+    local PageLayout = New("UIListLayout", {
+        Parent = Page,
+
+        Padding = UDim.new(0, 10),
+
+        SortOrder = Enum.SortOrder.LayoutOrder,
+    })
+
+    Pages[name] = Page
+
+    return Page
+end
+
+local function ShowPage(name)
+    for pageName, page in pairs(Pages) do
+        page.Visible = pageName == name
+    end
+
+    CurrentPage = name
+end
+
+--========================================================--
+-- TITLE
+--========================================================--
+
+local function AddTitle(page, title, description)
+
+    local Holder = New("Frame", {
+        Parent = page,
+
+        Size = UDim2.new(1, 0, 0, 65),
+
+        BackgroundTransparency = 1,
+    })
+
+    local Title = New("TextLabel", {
+        Parent = Holder,
+
+        BackgroundTransparency = 1,
+
+        Size = UDim2.new(1, 0, 0, 30),
+
+        Font = Enum.Font.GothamBold,
+        Text = title,
+
+        TextColor3 = CONFIG.Text,
+        TextSize = 24,
+
+        TextXAlignment = Enum.TextXAlignment.Left,
+    })
+
+    local Description = New("TextLabel", {
+        Parent = Holder,
+
+        BackgroundTransparency = 1,
+
+        Position = UDim2.fromOffset(0, 31),
+        Size = UDim2.new(1, 0, 0, 25),
+
+        Font = Enum.Font.Gotham,
+        Text = description or "",
+
+        TextColor3 = CONFIG.Muted,
+        TextSize = 12,
+
+        TextXAlignment = Enum.TextXAlignment.Left,
+    })
+
+end
+
+--========================================================--
+-- SECTION
+--========================================================--
+
+local function AddSection(page, text)
+
+    local Label = New("TextLabel", {
+        Parent = page,
+
+        Size = UDim2.new(1, 0, 0, 24),
+
+        BackgroundTransparency = 1,
+
+        Font = Enum.Font.GothamBold,
+        Text = text,
+
+        TextColor3 = CONFIG.Red,
+        TextSize = 12,
+
+        TextXAlignment = Enum.TextXAlignment.Left,
+    })
+
+    return Label
+end
+
+--========================================================--
+-- BUTTON
+--========================================================--
+
+local function AddButton(page, text, callback)
+
+    local Button = New("TextButton", {
+        Parent = page,
+
+        Size = UDim2.new(1, 0, 0, 45),
+
+        BackgroundColor3 = CONFIG.Card,
+
+        Text = text,
+
+        Font = Enum.Font.GothamSemibold,
+        TextSize = 13,
+
+        TextColor3 = CONFIG.Text,
+
+        AutoButtonColor = false,
+    })
+
+    Corner(Button, 9)
+    Stroke(Button, CONFIG.Border)
+
+    Button.MouseEnter:Connect(function()
+        Tween(Button, 0.15, {
+            BackgroundColor3 = CONFIG.Card2
         }):Play()
-        task.wait(0.3)
-        NotifFrame.Visible = false
     end)
+
+    Button.MouseLeave:Connect(function()
+        Tween(Button, 0.15, {
+            BackgroundColor3 = CONFIG.Card
+        }):Play()
+    end)
+
+    Button.MouseButton1Click:Connect(function()
+        if callback then
+            callback()
+        end
+    end)
+
+    return Button
 end
 
--- ==================== DATA SCRIPT PER TAB ====================
-local TabsData = {
-    Home = {
-        Title = "Home",
-        SubTitle = "Selamat datang di IZZ HUB",
-        Items = {
-            {Name = "Status Menu", Desc = "Cek status semua fitur.", Icon = "📊"},
-            {Name = "Informasi Update", Desc = "Lihat changelog terbaru.", Icon = "📰"},
-            {Name = "Kredit & Kontributor", Desc = "Terima kasih untuk semua.", Icon = "💖"}
-        }
-    },
-    Scripts = {
-        Title = "Scripts",
-        SubTitle = "Pilih script yang ingin kamu gunakan.",
-        Items = {
-            {Name = "Hitbox Modifier", Desc = "Memperbesar hitbox karakter.", Icon = "🎯"},
-            {Name = "Killer No Cooldown", Desc = "Skill killer tanpa cooldown.", Icon = "💀"},
-            {Name = "Infinite Lunge", Desc = "Lunge tanpa batas.", Icon = "🏃"},
-            {Name = "AIMLOCK M2 SKILL HIDDEN", Desc = "Lock musuh secara otomatis.", Icon = "🔒"},
-            {Name = "Mayers (Stalker) No Cooldown", Desc = "Stalker tanpa cooldown.", Icon = "👁️"},
-            {Name = "Massked Skill Spammer", Desc = "Spam skill secara cepat.", Icon = "✳️"},
-            {Name = "Anti Blind", Desc = "Menghilangkan efek blind.", Icon = "👁️‍🗨️"}
-        }
-    },
-    LocalPlayer = {
-        Title = "Local Player",
-        SubTitle = "Pengaturan karakter kamu.",
-        Items = {
-            {Name = "WalkSpeed", Desc = "Atur kecepatan berjalan.", Icon = "🏃‍♂️"},
-            {Name = "JumpPower", Desc = "Atur kekuatan lompat.", Icon = "🦘"},
-            {Name = "Infinite Jump", Desc = "Lompat tanpa batas.", Icon = "⬆️"}
-        }
-    },
-    Teleport = {
-        Title = "Teleport",
-        SubTitle = "Pindah lokasi dengan cepat.",
-        Items = {
-            {Name = "Spawn", Desc = "Teleport ke spawn.", Icon = "🏠"},
-            {Name = "Random Player", Desc = "Teleport ke player random.", Icon = "🎲"},
-            {Name = "Custom Coords", Desc = "Teleport ke koordinat custom.", Icon = "📍"}
-        }
-    },
-    Misc = {
-        Title = "Misc",
-        SubTitle = "Fitur tambahan lainnya.",
-        Items = {
-            {Name = "Fullbright", Desc = "Terangin seluruh map.", Icon = "💡"},
-            {Name = "Anti AFK", Desc = "Cegah kick karena AFK.", Icon = "⏳"},
-            {Name = "FPS Booster", Desc = "Tingkatkan performa.", Icon = "⚡"}
-        }
-    },
-    Settings = {
-        Title = "Settings",
-        SubTitle = "Konfigurasi UI dan sistem.",
-        Items = {
-            {Name = "UI Transparency", Desc = "Atur transparansi UI.", Icon = "🎨"},
-            {Name = "Toggle Keybind", Desc = "Ubah tombol toggle.", Icon = "⌨️"},
-            {Name = "Reset Config", Desc = "Reset semua pengaturan.", Icon = "🔄"}
-        }
-    }
-}
+--========================================================--
+-- TOGGLE
+--========================================================--
 
--- ==================== FUNGSI MEMBUAT ITEM ====================
-local currentTabItems = {} -- Menyimpan item yang sedang ditampilkan
+local function AddToggle(page, text, default, callback)
 
-local function createScriptItem(data, order)
-    local ItemFrame = Instance.new("Frame")
-    ItemFrame.Name = data.Name .. "Item"
-    ItemFrame.Size = UDim2.new(1, -10, 0, 55)
-    ItemFrame.BackgroundColor3 = Colors.ItemBg
-    ItemFrame.BorderSizePixel = 0
-    ItemFrame.LayoutOrder = order
-    ItemFrame.Parent = ScriptList
-    createCorner(ItemFrame, 10)
-    
-    local itemStroke = createStroke(ItemFrame, Colors.Accent, 1, 0.8)
+    local Enabled = default or false
 
-    -- Icon
-    local IconLabel = Instance.new("TextLabel")
-    IconLabel.Size = UDim2.new(0, 45, 1, 0)
-    IconLabel.BackgroundTransparency = 1
-    IconLabel.Text = data.Icon
-    IconLabel.TextColor3 = Colors.Accent
-    IconLabel.Font = Enum.Font.GothamBold
-    IconLabel.TextSize = 20
-    IconLabel.Parent = ItemFrame
+    local Holder = New("Frame", {
+        Parent = page,
 
-    -- Title
-    local ItemTitle = Instance.new("TextLabel")
-    ItemTitle.Size = UDim2.new(1, -150, 0, 20)
-    ItemTitle.Position = UDim2.new(0, 55, 0, 10)
-    ItemTitle.BackgroundTransparency = 1
-    ItemTitle.Text = data.Name
-    ItemTitle.TextColor3 = Colors.Text
-    ItemTitle.Font = Enum.Font.GothamBold
-    ItemTitle.TextSize = 14
-    ItemTitle.TextXAlignment = Enum.TextXAlignment.Left
-    ItemTitle.Parent = ItemFrame
+        Size = UDim2.new(1, 0, 0, 50),
 
-    -- Description
-    local ItemDesc = Instance.new("TextLabel")
-    ItemDesc.Size = UDim2.new(1, -150, 0, 15)
-    ItemDesc.Position = UDim2.new(0, 55, 0, 32)
-    ItemDesc.BackgroundTransparency = 1
-    ItemDesc.Text = data.Desc
-    ItemDesc.TextColor3 = Colors.TextDim
-    ItemDesc.Font = Enum.Font.Gotham
-    ItemDesc.TextSize = 11
-    ItemDesc.TextXAlignment = Enum.TextXAlignment.Left
-    ItemDesc.Parent = ItemFrame
+        BackgroundColor3 = CONFIG.Card,
+        BorderSizePixel = 0,
+    })
 
-    -- Toggle Switch (Pengganti Chevron biar lebih keren)
-    local ToggleSwitch = Instance.new("TextButton")
-    ToggleSwitch.Size = UDim2.new(0, 40, 0, 20)
-    ToggleSwitch.Position = UDim2.new(1, -55, 0.5, -10)
-    ToggleSwitch.BackgroundColor3 = Colors.ToggleOff
-    ToggleSwitch.Text = ""
-    ToggleSwitch.Parent = ItemFrame
-    createCorner(ToggleSwitch, 10)
+    Corner(Holder, 9)
+    Stroke(Holder, CONFIG.Border)
 
-    local ToggleDot = Instance.new("Frame")
-    ToggleDot.Size = UDim2.new(0, 16, 0, 16)
-    ToggleDot.Position = UDim2.new(0, 2, 0.5, -8)
-    ToggleDot.BackgroundColor3 = Colors.Text
-    ToggleDot.BorderSizePixel = 0
-    ToggleDot.Parent = ToggleSwitch
-    createCorner(ToggleDot, 8)
+    local Label = New("TextLabel", {
+        Parent = Holder,
 
-    local isToggled = false
+        Position = UDim2.fromOffset(14, 0),
+        Size = UDim2.new(1, -75, 1, 0),
 
-    -- Hover Effect
-    ItemFrame.MouseEnter:Connect(function()
-        TweenService:Create(ItemFrame, TweenInfo.new(0.2), {BackgroundColor3 = Colors.ItemHover}):Play()
-        TweenService:Create(itemStroke, TweenInfo.new(0.2), {Transparency = 0}):Play()
-    end)
+        BackgroundTransparency = 1,
 
-    ItemFrame.MouseLeave:Connect(function()
-        TweenService:Create(ItemFrame, TweenInfo.new(0.2), {BackgroundColor3 = Colors.ItemBg}):Play()
-        TweenService:Create(itemStroke, TweenInfo.new(0.2), {Transparency = 0.8}):Play()
-    end)
+        Font = Enum.Font.GothamMedium,
+        Text = text,
 
-    -- Click Action
-    ToggleSwitch.MouseButton1Click:Connect(function()
-        isToggled = not isToggled
-        playSound(Sounds.Click, 0.4)
-        
-        if isToggled then
-            TweenService:Create(ToggleSwitch, TweenInfo.new(0.2), {BackgroundColor3 = Colors.ToggleOn}):Play()
-            TweenService:Create(ToggleDot, TweenInfo.new(0.2), {Position = UDim2.new(1, -18, 0.5, -8)}):Play()
-            showNotification("✅ " .. data.Name, "Fitur berhasil diaktifkan.")
-            print("[bl_ai] Simulasi ON: " .. data.Name)
+        TextColor3 = CONFIG.Text,
+        TextSize = 13,
+
+        TextXAlignment = Enum.TextXAlignment.Left,
+    })
+
+    local Toggle = New("TextButton", {
+        Parent = Holder,
+
+        Position = UDim2.new(1, -55, 0.5, -12),
+        Size = UDim2.fromOffset(42, 24),
+
+        BackgroundColor3 = CONFIG.Card2,
+
+        Text = "",
+
+        AutoButtonColor = false,
+    })
+
+    Corner(Toggle, 12)
+
+    local Circle = New("Frame", {
+        Parent = Toggle,
+
+        Position = UDim2.fromOffset(3, 3),
+        Size = UDim2.fromOffset(18, 18),
+
+        BackgroundColor3 = CONFIG.Muted,
+        BorderSizePixel = 0,
+    })
+
+    Corner(Circle, 10)
+
+    local function Update()
+
+        if Enabled then
+
+            Tween(Toggle, 0.2, {
+                BackgroundColor3 = CONFIG.Red
+            }):Play()
+
+            Tween(Circle, 0.2, {
+                Position = UDim2.new(1, -21, 0, 3),
+                BackgroundColor3 = CONFIG.Text
+            }):Play()
+
         else
-            TweenService:Create(ToggleSwitch, TweenInfo.new(0.2), {BackgroundColor3 = Colors.ToggleOff}):Play()
-            TweenService:Create(ToggleDot, TweenInfo.new(0.2), {Position = UDim2.new(0, 2, 0.5, -8)}):Play()
-            showNotification("❌ " .. data.Name, "Fitur dimatikan.")
-            print("[bl_ai] Simulasi OFF: " .. data.Name)
-                        end
-    end)
 
-    return ItemFrame
-end
+            Tween(Toggle, 0.2, {
+                BackgroundColor3 = CONFIG.Card2
+            }):Play()
 
--- ==================== FUNGSI GANTI TAB ====================
-local function switchTab(tabName)
-    -- Hapus item lama
-    for _, item in ipairs(currentTabItems) do
-        item:Destroy()
-    end
-    currentTabItems = {}
+            Tween(Circle, 0.2, {
+                Position = UDim2.fromOffset(3, 3),
+                BackgroundColor3 = CONFIG.Muted
+            }):Play()
 
-    -- Update Header
-    local tabData = TabsData[tabName]
-    if not tabData then return end
-    
-    TitleText.Text = tabData.Title
-    SubTitleText.Text = tabData.SubTitle
+        end
 
-    -- Buat item baru
-    for i, data in ipairs(tabData.Items) do
-        local item = createScriptItem(data, i)
-        table.insert(currentTabItems, item)
     end
 
-    -- Update Canvas Size
-    task.wait(0.05)
-    ScriptList.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y + 20)
-end
+    Toggle.MouseButton1Click:Connect(function()
 
--- ==================== SIDEBAR NAVIGATION ====================
-local navButtons = {}
+        Enabled = not Enabled
 
-local function createNavButton(name, icon, order)
-    local btn = Instance.new("TextButton")
-    btn.Name = name .. "Btn"
-    btn.Size = UDim2.new(1, 0, 0, 38)
-    btn.BackgroundColor3 = Colors.Sidebar
-    btn.BorderSizePixel = 0
-    btn.Text = "  " .. icon .. "  " .. name
-    btn.TextColor3 = Colors.TextDim
-    btn.Font = Enum.Font.GothamMedium
-    btn.TextSize = 13
-    btn.TextXAlignment = Enum.TextXAlignment.Left
-    btn.LayoutOrder = order
-    btn.Parent = NavContainer
-    createCorner(btn, 8)
+        Update()
 
-    -- Indikator Aktif (Garis Merah di Kiri)
-    local activeIndicator = Instance.new("Frame")
-    activeIndicator.Size = UDim2.new(0, 3, 0.6, 0)
-    activeIndicator.Position = UDim2.new(0, 0, 0.2, 0)
-    activeIndicator.BackgroundColor3 = Colors.Accent
-    activeIndicator.BorderSizePixel = 0
-    activeIndicator.Visible = false
-    activeIndicator.Parent = btn
-    createCorner(activeIndicator, 2)
-
-    btn.MouseEnter:Connect(function()
-        if not btn:GetAttribute("Active") then
-            TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Colors.ItemHover, TextColor3 = Colors.Text}):Play()
-        end
-    end)
-
-    btn.MouseLeave:Connect(function()
-        if not btn:GetAttribute("Active") then
-            TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Colors.Sidebar, TextColor3 = Colors.TextDim}):Play()
-        end
-    end)
-
-    btn.MouseButton1Click:Connect(function()
-        playSound(Sounds.Click, 0.4)
-        
-        -- Reset semua tombol
-        for _, b in pairs(navButtons) do
-            b:SetAttribute("Active", false)
-            b.BackgroundColor3 = Colors.Sidebar
-            b.TextColor3 = Colors.TextDim
-            b:FindFirstChildOfClass("Frame").Visible = false
+        if callback then
+            callback(Enabled)
         end
 
-        -- Set tombol ini aktif
-        btn:SetAttribute("Active", true)
-        btn.BackgroundColor3 = Colors.Accent
-        btn.TextColor3 = Colors.Text
-        activeIndicator.Visible = true
-
-        -- Ganti konten
-        switchTab(name)
     end)
 
-    navButtons[name] = btn
-    return btn
-end
+    Update()
 
--- Buat tombol navigasi
-createNavButton("Home", "🏠", 1)
-createNavButton("Scripts", "⚡", 2)
-createNavButton("LocalPlayer", "👤", 3)
-createNavButton("Teleport", "📍", 4)
-createNavButton("Misc", "⚙️", 5)
-createNavButton("Settings", "⚙", 6)
+    return {
+        Set = function(value)
+            Enabled = value
+            Update()
 
--- Set Home sebagai default
-navButtons["Home"]:SetAttribute("Active", true)
-navButtons["Home"].BackgroundColor3 = Colors.Accent
-navButtons["Home"].TextColor3 = Colors.Text
-navButtons["Home"]:FindFirstChildOfClass("Frame").Visible = true
-switchTab("Home")
-
--- ==================== SEARCH FUNCTIONALITY ====================
-SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-    local query = string.lower(SearchBox.Text)
-    for _, item in ipairs(currentTabItems) do
-        local title = item:FindFirstChild("TextLabel") -- Ambil TextLabel pertama (Title)
-        if title then
-            local itemName = string.lower(title.Text)
-            if query == "" or string.find(itemName, query) then
-                item.Visible = true
-            else
-                item.Visible = false
+            if callback then
+                callback(Enabled)
             end
-        end
-    end
-end)
+        end,
 
--- ==================== TOGGLE & ANIMASI UI ====================
-local isOpen = true
+        Get = function()
+            return Enabled
+        end,
+    }
 
-local function openUI()
-    isOpen = true
-    ToggleButton.Visible = false
-    MainFrame.Visible = true
-    MainFrame.Size = UDim2.new(0, 0, 0, 0)
-    MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-    
-    playSound(Sounds.Open, 0.5)
-    
-    TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, 650, 0, 450),
-        Position = UDim2.new(0.5, -325, 0.5, -225)
-    }):Play()
 end
 
-local function closeUI()
-    isOpen = false
-    playSound(Sounds.Close, 0.5)
-    
-    TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
-        Size = UDim2.new(0, 0, 0, 0),
-        Position = UDim2.new(0.5, 0, 0.5, 0)
-    }):Play()
-    
-    task.wait(0.3)
-    MainFrame.Visible = false
-    ToggleButton.Visible = true
+--========================================================--
+-- DROPDOWN
+--========================================================--
+
+local function AddDropdown(page, text, options, callback)
+
+    local Opened = false
+    local Selected = options[1] or "Select"
+
+    local Holder = New("Frame", {
+        Parent = page,
+
+        Size = UDim2.new(1, 0, 0, 48),
+
+        BackgroundColor3 = CONFIG.Card,
+
+        BorderSizePixel = 0,
+
+        ClipsDescendants = true,
+    })
+
+    Corner(Holder, 9)
+    Stroke(Holder, CONFIG.Border)
+
+    local Button = New("TextButton", {
+        Parent = Holder,
+
+        Size = UDim2.new(1, 0, 0, 48),
+
+        BackgroundTransparency = 1,
+
+        Text = text .. " : " .. Selected,
+
+        Font = Enum.Font.GothamMedium,
+        TextSize = 13,
+
+        TextColor3 = CONFIG.Text,
+
+        AutoButtonColor = false,
+    })
+
+    Button.TextXAlignment = Enum.TextXAlignment.Left
+
+    Padding(Button, 12)
+
+    local List = New("Frame", {
+        Parent = Holder,
+
+        Position = UDim2.fromOffset(0, 48),
+
+        Size = UDim2.new(1, 0, 0, #options * 36),
+
+        BackgroundColor3 = CONFIG.Card2,
+
+        BorderSizePixel = 0,
+    })
+
+    local ListLayout = New("UIListLayout", {
+        Parent = List,
+
+        SortOrder = Enum.SortOrder.LayoutOrder,
+    })
+
+    for _, option in ipairs(options) do
+
+        local Option = New("TextButton", {
+            Parent = List,
+
+            Size = UDim2.new(1, 0, 0, 36),
+
+            BackgroundTransparency = 1,
+
+            Text = option,
+
+            Font = Enum.Font.Gotham,
+            TextSize = 12,
+
+            TextColor3 = CONFIG.Text,
+
+            AutoButtonColor = false,
+        })
+
+        Option.MouseButton1Click:Connect(function()
+
+            Selected = option
+
+            Button.Text = text .. " : " .. Selected
+
+            Opened = false
+
+            Tween(Holder, 0.2, {
+                Size = UDim2.new(1, 0, 0, 48)
+            }):Play()
+
+            if callback then
+                callback(Selected)
+            end
+
+        end)
+
+    end
+
+    Button.MouseButton1Click:Connect(function()
+
+        Opened = not Opened
+
+        local Height = Opened
+            and (48 + (#options * 36))
+            or 48
+
+        Tween(Holder, 0.2, {
+            Size = UDim2.new(1, 0, 0, Height)
+        }):Play()
+
+    end)
+
+    return Holder
 end
 
--- Event Klik Tombol
-CloseBtn.MouseButton1Click:Connect(closeUI)
-MinBtn.MouseButton1Click:Connect(closeUI) -- Minimize sama kayak close, tapi UI bisa dibuka lagi
-ToggleButton.MouseButton1Click:Connect(openUI)
+--========================================================--
+-- PAGES
+--========================================================--
 
--- Keybind Toggle (Tombol "RightShift" atau "Kanan Shift")
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.RightShift then
-        if isOpen then
-            closeUI()
-        else
-            openUI()
-        end
-    end
+local Home = CreatePage("Home")
+local Combat = CreatePage("Combat")
+local Farm = CreatePage("Farm")
+local PlayerPage = CreatePage("Player")
+local Teleport = CreatePage("Teleport")
+local Settings = CreatePage("Settings")
+
+--========================================================--
+-- HOME
+--========================================================--
+
+AddTitle(
+    Home,
+    "Welcome to IZZ HUB",
+    "Premium Roblox utility interface"
+)
+
+AddSection(Home, "SYSTEM")
+
+AddButton(Home, "Check Status", function()
+    print("IZZ HUB: Online")
 end)
 
-print("[bl_ai] IZZ HUB UI V2 (Ultra Cool Edition) berhasil dimuat! 🫡")
-print("[bl_ai] Tekan 'RightShift' untuk buka/tutup UI.")
- 
+AddButton(Home, "Test Notification", function()
+    print("Notification test")
+end)
+
+AddSection(Home, "INFORMATION")
+
+AddButton(Home, "IZZ HUB " .. CONFIG.Version, function()
+    print("IZZ HUB version:", CONFIG.Version)
+end)
+
+--========================================================--
+-- COMBAT
+--========================================================--
+
+AddTitle(
+    Combat,
+    "Combat",
+    "Combat-related controls"
+)
+
+AddSection(Combat, "FEATURES")
+
+AddToggle(Combat, "Example Toggle", false, function(value)
+    print("Example Toggle:", value)
+end)
+
+AddButton(Combat, "Example Action", function()
+    print("Example action")
+end)
+
+--========================================================--
+-- FARM
+--========================================================--
+
+AddTitle(
+    Farm,
+    "Farm",
+    "Automation controls"
+)
+
+AddSection(Farm, "AUTOMATION")
+
+AddToggle(Farm, "Auto Farm", false, function(value)
+    print("Auto Farm:", value)
+end)
+
+AddToggle(Farm, "Auto Collect", false, function(value)
+    print("Auto Collect:", value)
+end)
+
+--========================================================--
+-- PLAYER
+--========================================================--
+
+AddTitle(
+    PlayerPage,
+    "Player",
+    "Player customization"
+)
+
+AddSection(PlayerPage, "PLAYER")
+
+AddToggle(PlayerPage, "Example Feature", false, function(value)
+    print("Player feature:", value)
+end)
+
+AddDropdown(
+    PlayerPage,
+    "Mode",
+    {
+        "Default",
+        "Fast",
+        "Maximum"
+    },
+    function(value)
+        print("Selected:", value)
+    end
+)
+
+--========================================================--
+-- TELEPORT
+--========================================================--
+
+AddTitle(
+    Teleport,
+    "Teleport",
+    "Teleport locations"
+)
+
+AddSection(Teleport, "LOCATIONS")
+
+AddButton(Teleport, "Location 1", function()
+    print("Teleport 1")
+end)
+
+AddButton(Teleport, "Location 2", function()
+    print("Teleport 2")
+end)
+
+AddButton(Teleport, "Location 3", function()
+    print("Teleport 3")
+end)
+
+--========================================================--
+-- SETTINGS
+--========================================================--
+
+AddTitle(
+    Settings,
+    "Settings",
+    "IZZ HUB configuration"
+)
+
+AddSection(Settings, "INTERFACE")
+
+AddToggle(Settings, "UI Animation", true, function(value)
+    print("Animation:", value)
+end)
+
+AddToggle(Settings, "Notifications", true, function(value)
+    print("Notifications:", value)
+end)
+
+--========================================================--
+-- SIDEBAR BUTTON SYSTEM
+--========================================================--
+
+local TabButtons = {}
+
+local function AddTab(name, icon)
+
+    local Button = New("TextButton", {
+        Parent = Sidebar,
+
+        Size = UDim2.new(1, 0, 0, 40),
+
+        BackgroundColor3 = CONFIG.Card,
+
+        Text = "  " .. icon .. "   " .. name,
+
+        Font = Enum.Font.GothamMedium,
+        TextSize = 12,
+
+        TextColor3 = CONFIG.Muted,
+
+        TextXAlignment = Enum.TextXAlignment.Left,
+
+        AutoButtonColor = false,
+    })
+
+    Corner(Button, 8)
+
+    TabButtons[name] = Button
+
+    Button.MouseButton1Click:Connect(function()
+
+        ShowPage(name)
+
+        for tabName, tab in pairs(TabButtons) do
+
+            Tween(tab, 0.15, {
+                BackgroundColor3 =
+                    tabName == name
+                    and CONFIG.Red
+                    or CONFIG.Card,
+
+                TextColor3 =
+                    tabName == name
+                    and CONFIG.Text
+                    or CONFIG.Muted,
+            }):Play()
+
+        end
+
+    end)
+
+    return Button
+end
+
+AddTab("Home", "◆")
+AddTab("Combat", "⚔")
+AddTab("Farm", "◈")
+AddTab("Player", "●")
+AddTab("Teleport", "◇")
+AddTab("Settings", "⚙")
+
+--========================================================--
+-- SHOW DEFAULT PAGE
+--========================================================--
+
+ShowPage("Home")
+
+Tween(TabButtons.Home, 0.15, {
+    BackgroundColor3 = CONFIG.Red,
+    TextColor3 = CONFIG.Text,
+}):Play()
+
+--========================================================--
+-- DRAG SYSTEM
+--========================================================--
+
+local Dragging = false
+local DragStart
+local StartPosition
+
+TopBar.InputBegan:Connect(function(input)
+
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+
+        Dragging = true
+        DragStart = input.Position
+        StartPosition = Main.Position
+
+    end
+
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+
+    if not Dragging then
+        return
+    end
+
+    if input.UserInputType ~= Enum.UserInputType.MouseMovement
+        and input.UserInputType ~= Enum.UserInputType.Touch then return
+    end
+
+    local Delta = input.Position - DragStart
+
+    Main.Position = UDim2.new(
+        StartPosition.X.Scale,
+        StartPosition.X.Offset + Delta.X,
+
+        StartPosition.Y.Scale,
+        StartPosition.Y.Offset + Delta.Y
+    )
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+
+        Dragging = false
+
+    end
+
+end)
+
+--========================================================--
+-- MINIMIZE / RESTORE
+--========================================================--
+
+local Minimized = false
+local LastPosition = Main.Position
+
+local Floating = New("TextButton", {
+    Parent = ScreenGui,
+
+    Size = UDim2.fromOffset(52, 52),
+
+    Position = UDim2.new(
+        0,
+        20,
+        0.5,
+        -26
+    ),
+
+    BackgroundColor3 = CONFIG.Red,
+
+    Text = "IZZ",
+
+    Font = Enum.Font.GothamBold,
+    TextSize = 14,
+
+    TextColor3 = CONFIG.Text,
+
+    Visible = false,
+
+    AutoButtonColor = false,
+})
+
+Corner(Floating, 16)
+Stroke(Floating, CONFIG.Red2)
+
+Minimize.MouseButton1Click:Connect(function()
+
+    if Minimized then
+        return
+    end
+
+    Minimized = true
+
+    LastPosition = Main.Position
+
+    local HideTween = Tween(
+        Main,
+        0.3,
+        {
+            Size = UDim2.fromOffset(0, 0)
+        }
+    )
+
+    HideTween:Play()
+
+    HideTween.Completed:Connect(function()
+        Main.Visible = false
+        Floating.Visible = true
+    end)
+
+end)
+
+Floating.MouseButton1Click:Connect(function()
+
+    if not Minimized then
+        return
+    end
+
+    Minimized = false
+
+    Floating.Visible = false
+    Main.Visible = true
+
+    Main.Position = LastPosition
+    Main.Size = UDim2.fromOffset(0, 0)
+
+    Tween(
+        Main,
+        0.3,
+        {
+            Size = UDim2.fromOffset(760, 480)
+        }
+    ):Play()
+
+end)
+
+--========================================================--
+-- OPEN ANIMATION
+--========================================================--
+
+Main.Size = UDim2.fromOffset(0, 0)
+
+Tween(
+    Main,
+    0.45,
+    {
+        Size = UDim2.fromOffset(760, 480)
+    }
+):Play()
+
+--========================================================--
+-- FINAL
+--========================================================--
+
+print("================================")
+print("        IZZ HUB UI")
+print("        Loaded Successfully")
+print("        Version:", CONFIG.Version)
+print("================================")
+       
