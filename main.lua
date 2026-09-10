@@ -1,28 +1,31 @@
 --[[
-    Script: Universal Aimbot
-    UI: WindUI Library (Crimson Red Theme)
+    Script: Universal Aimbot (Camera Lock)
+    UI: Urban UI Library (Red Theme)
     Fitur: Aimbot, FOV, Snapline, Smoothing, Body Part, Team Check, Visible Check, Keybind
 ]]
 
--- 1. Load WindUI Library
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+-- 1. Load Urban UI Library
+local WIND = loadstring(game:HttpGet("https://raw.githubusercontent.com/vortex-py/Urban-Ui-Library/refs/heads/main/load-ui.lua"))()
 
--- 2. Set Tema Crimson Red
-WindUI:SetTheme("Crimson")
+-- 2. Load Tema Merah (Crimson Red)
+local success, theme = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/vortex-py/Urban-Ui-Library/refs/heads/main/v4.0/load-ui/urban-ui/theme/red.lua"))()
+end)
 
 -- 3. Buat Window Utama
-local Window = WindUI:CreateWindow({
-    Title = "Universal Aimbot",
+local Window = WIND:CreateWindow({
+    Title = "UNIVERSAL AIMBOT",
     SubTitle = "Crimson Edition",
-    Icon = "rbxassetid://80788381547970",
     Size = UDim2.new(0, 520, 0, 480),
-    Transparent = true,
-    Theme = "Crimson"
+    Icon = "rbxassetid://80788381547970", -- Ganti dengan ID icon merah jika ada
+    FloatIcon = "rbxassetid://80788381547970",
+    FloatIconSize = 36,
+    Theme = "Red" -- Memaksa tema merah
 })
 
--- 4. Buat Tab
-local MainTab = Window:Tab({ Title = "Aimbot", Icon = "crosshair" })
-local VisualTab = Window:Tab({ Title = "Visual", Icon = "eye" })
+-- 4. Buat Tabs
+local MainTab = Window:CreateTab("Aimbot")
+local VisualTab = Window:CreateTab("Visual")
 
 -- ==================== KONFIGURASI DEFAULT ====================
 getgenv().Aimbot_Enabled = false
@@ -34,10 +37,9 @@ getgenv().Aimbot_TargetNPC = true
 getgenv().Aimbot_TargetPlayers = false
 getgenv().Aimbot_TeamCheck = true
 getgenv().Aimbot_VisibleCheck = false
-getgenv().Aimbot_AutoShoot = false
-getgenv().Aimbot_Keybind = Enum.KeyCode.RightAlt -- Default: Right Alt
+getgenv().Aimbot_Keybind = Enum.KeyCode.RightAlt
 
--- ==================== DRAWING API ====================
+-- ==================== DRAWING API (FOV & SNAPLINE) ====================
 local hasDrawing = pcall(function() return Drawing.new("Circle") end)
 local fovCircle, snapline
 
@@ -47,26 +49,30 @@ if hasDrawing then
     fovCircle.NumSides = 60
     fovCircle.Radius = getgenv().Aimbot_FOV
     fovCircle.Filled = false
-    fovCircle.Color = Color3.fromRGB(220, 20, 60) -- Crimson
+    fovCircle.Color = Color3.fromRGB(220, 20, 60) -- Crimson Red
     fovCircle.Visible = false
     fovCircle.Transparency = 1
 
     snapline = Drawing.new("Line")
     snapline.Thickness = 2
-    snapline.Color = Color3.fromRGB(220, 20, 60)
+    snapline.Color = Color3.fromRGB(220, 20, 60) -- Crimson Red
     snapline.Visible = false
     snapline.Transparency = 1
 else
-    WindUI:Notify({ Title = "Error", Content = "Executor tidak support Drawing API!", Duration = 5 })
+    WIND:Notify({ Title = "Error", Content = "Executor tidak support Drawing API!", Duration = 5 })
 end
 
--- ==================== FUNGSI UTILITY ====================
+-- ==================== SERVICES & VARIABEL ====================
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local Camera = Workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
 
+local isKeyHeld = false
+
+-- ==================== FUNGSI UTILITY ====================
 local function isVisible(targetPart)
     if not getgenv().Aimbot_VisibleCheck then return true end
     local rayParams = RaycastParams.new()
@@ -138,9 +144,6 @@ local function getClosestTarget()
 end
 
 -- ==================== LOGIKA KEYBIND ====================
-local UserInputService = game:GetService("UserInputService")
-local isKeyHeld = false
-
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == getgenv().Aimbot_Keybind then
@@ -154,17 +157,20 @@ UserInputService.InputEnded:Connect(function(input, gameProcessed)
     end
 end)
 
--- ==================== LOOP AIMBOT ====================
-RunService.RenderStepped:Connect(function()
+-- ==================== LOOP AIMBOT (IMPROVED) ====================
+-- Menggunakan BindToRenderStep dengan prioritas tinggi agar camera lock bekerja mulus
+RunService:BindToRenderStep("UniversalAimbot", Enum.RenderPriority.Camera.Value + 1, function()
     local screenSize = Camera.ViewportSize
     local centerX, centerY = screenSize.X / 2, screenSize.Y / 2
 
+    -- Update FOV Circle
     if fovCircle then
         fovCircle.Position = Vector2.new(centerX, centerY)
         fovCircle.Radius = getgenv().Aimbot_FOV
         fovCircle.Visible = getgenv().Aimbot_Enabled
     end
 
+    -- Jika Aimbot mati atau keybind tidak ditekan, matikan snapline dan return
     if not getgenv().Aimbot_Enabled or not isKeyHeld then
         if snapline then snapline.Visible = false end
         return
@@ -173,6 +179,7 @@ RunService.RenderStepped:Connect(function()
     local targetPart, targetScreenPos = getClosestTarget()
 
     if targetPart then
+        -- Update Snapline
         if snapline and getgenv().Aimbot_ShowSnapline then
             snapline.From = Vector2.new(centerX, centerY)
             snapline.To = targetScreenPos
@@ -181,134 +188,55 @@ RunService.RenderStepped:Connect(function()
             snapline.Visible = false
         end
 
+        -- Camera Lock (Smooth)
         local targetCFrame = CFrame.lookAt(Camera.CFrame.Position, targetPart.Position)
         Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, getgenv().Aimbot_Smoothing)
-
-        if getgenv().Aimbot_AutoShoot then
-            -- Simulasi klik kiri (mungkin tidak berfungsi di semua executor/game)
-            pcall(function()
-                local mouse = LocalPlayer:GetMouse()
-                if mouse and mouse.Target then
-                    mouse1click()
-                end
-            end)
-        end
     else
         if snapline then snapline.Visible = false end
     end
 end)
 
 -- ==================== UI: TAB AIMBOT ====================
-MainTab:Section({ Title = "Aimbot Settings" })
+MainTab:AddToggle("Enable Aimbot", false, function(state)
+    getgenv().Aimbot_Enabled = state
+end)
 
-MainTab:Toggle({
-    Title = "Enable Aimbot",
-    Desc = "Aktifkan fitur Aimbot",
-    Value = false,
-    Callback = function(state)
-        getgenv().Aimbot_Enabled = state
-    end
-})
+MainTab:AddSlider("FOV Size", 10, 500, 120, function(value)
+    getgenv().Aimbot_FOV = value
+end)
 
-MainTab:Keybind({
-    Title = "Aimbot Keybind",
-    Desc = "Tombol untuk mengunci target",
-    Value = getgenv().Aimbot_Keybind,
-    Callback = function(key)
-        getgenv().Aimbot_Keybind = key
-    end
-})
+MainTab:AddSlider("Smoothing", 1, 100, 15, function(value)
+    getgenv().Aimbot_Smoothing = value / 100 -- Ubah 1-100 jadi 0.01 - 1
+end)
 
-MainTab:Slider({
-    Title = "FOV Size",
-    Desc = "Radius area kuncian",
-    Value = { Min = 10, Max = 500, Default = 120 },
-    Callback = function(value)
-        getgenv().Aimbot_FOV = value
-    end
-})
+MainTab:AddDropdown("Body Part", {"Head", "UpperTorso", "HumanoidRootPart", "LowerTorso"}, function(value)
+    getgenv().Aimbot_BodyPart = value
+end)
 
-MainTab:Slider({
-    Title = "Smoothing",
-    Desc = "1 = Instan, 100 = Lambat/Natural",
-    Value = { Min = 1, Max = 100, Default = 15 },
-    Callback = function(value)
-        getgenv().Aimbot_Smoothing = value / 100
-    end
-})
+MainTab:AddToggle("Target NPC", true, function(state)
+    getgenv().Aimbot_TargetNPC = state
+end)
 
-MainTab:Dropdown({
-    Title = "Body Part",
-    Desc = "Bagian tubuh yang dikunci",
-    Values = { "Head", "UpperTorso", "HumanoidRootPart", "LowerTorso" },
-    Default = "Head",
-    Callback = function(value)
-        getgenv().Aimbot_BodyPart = value
-    end
-})
+MainTab:AddToggle("Target Players", false, function(state)
+    getgenv().Aimbot_TargetPlayers = state
+end)
 
-MainTab:Section({ Title = "Target Filter" })
+MainTab:AddToggle("Team Check", true, function(state)
+    getgenv().Aimbot_TeamCheck = state
+end)
 
-MainTab:Toggle({
-    Title = "Target NPC",
-    Desc = "Kunci ke NPC",
-    Value = true,
-    Callback = function(state)
-        getgenv().Aimbot_TargetNPC = state
-    end
-})
-
-MainTab:Toggle({
-    Title = "Target Players",
-    Desc = "Kunci ke pemain lain",
-    Value = false,
-    Callback = function(state)
-        getgenv().Aimbot_TargetPlayers = state
-    end
-})
-
-MainTab:Toggle({
-    Title = "Team Check",
-    Desc = "Jangan kunci ke rekan setim",
-    Value = true,
-    Callback = function(state)
-        getgenv().Aimbot_TeamCheck = state
-    end
-})
-
-MainTab:Toggle({
-    Title = "Visible Check",
-    Desc = "Hanya kunci yang terlihat (tidak tembus tembok)",
-    Value = false,
-    Callback = function(state)
-        getgenv().Aimbot_VisibleCheck = state
-    end
-})
+MainTab:AddToggle("Visible Check", false, function(state)
+    getgenv().Aimbot_VisibleCheck = state
+end)
 
 -- ==================== UI: TAB VISUAL ====================
-VisualTab:Section({ Title = "Visual Settings" })
-
-VisualTab:Toggle({
-    Title = "Show Snapline",
-    Desc = "Tampilkan garis ke target",
-    Value = true,
-    Callback = function(state)
-        getgenv().Aimbot_ShowSnapline = state
-    end
-})
-
-VisualTab:Toggle({
-    Title = "Auto Shoot",
-    Desc = "Otomatis klik kiri saat target terkunci (tidak semua game support)",
-    Value = false,
-    Callback = function(state)
-        getgenv().Aimbot_AutoShoot = state
-    end
-})
+VisualTab:AddToggle("Show Snapline", true, function(state)
+    getgenv().Aimbot_ShowSnapline = state
+end)
 
 -- Notifikasi
-WindUI:Notify({
+WIND:Notify({
     Title = "Universal Aimbot",
-    Content = "Script berhasil dimuat!",
+    Content = "Script berhasil dimuat! Tekan Right Alt untuk mengunci target.",
     Duration = 5
 })
