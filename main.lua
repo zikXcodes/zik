@@ -130,8 +130,25 @@ task.spawn(function()
                 -- Jika game menggunakan RemoteEvent, ganti dengan yang sesuai.
                 -- Contoh: game:GetService("ReplicatedStorage").Remotes.Damage:FireServer(target.model)
                 if target.humanoid then
-                    target.humanoid.Health = 0 -- Langsung matikan (hati-hati, bisa terdeteksi)
-                    -- Alternatif: target.humanoid:TakeDamage(100)
+                    -- 1. Tentukan RemoteEvent-nya di luar loop (sesuaikan path-nya!)
+local MeleeEvent = game:GetService("ReplicatedStorage").Remotes.MeleeHitEvent
+
+-- 2. Di dalam loop Kill Aura, ganti metode damage menjadi:
+task.spawn(function()
+    while task.wait(0.15) do -- Jeda 0.15 detik biar aman dari anti-cheat
+        if getgenv().AuraNPC or getgenv().AuraCop or getgenv().AuraCustomer then
+            local targets = getTargets()
+            for _, target in ipairs(targets) do
+                if target.model and target.model:FindFirstChild("HumanoidRootPart") then
+                    
+                    -- Kirim data persis seperti log Remote Spy kamu tadi
+                    MeleeEvent:FireServer(
+                        target.model, -- Argumen 1: Model NPC
+                        target.model.HumanoidRootPart.Position, -- Argumen 2: Posisi NPC
+                        Vector3.new(0, 0, 0), -- Argumen 3: Arah (bisa dikosongkan)
+                        999 -- Argumen 4: Damage besar biar langsung mati
+                    )
+                    
                 end
             end
         end
