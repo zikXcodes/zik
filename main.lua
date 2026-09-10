@@ -18,6 +18,21 @@ local Window = WindUI:CreateWindow({
     Folder = "ZikHub",
 })
 
+-- Helper to ensure compatibility with WindUI variants that require Sections inside Tabs
+local function ensureSection(tab, title)
+    title = title or ""
+    if not tab then return tab end
+    if type(tab.Section) == "function" then
+        local ok, sect = pcall(function()
+            return tab:Section({ Title = title })
+        end)
+        if ok and sect then
+            return sect
+        end
+    end
+    return tab
+end
+
 -- =====================
 -- SERVICES & VARIABLES
 -- =====================
@@ -99,6 +114,7 @@ local Tab = Window:Tab({
     Title = "Main",
     Icon = "home",
 })
+Tab = ensureSection(Tab, "Main Settings")
 
 Tab:Label({ Title = "Welcome", Content = "Burgerz Cheat by Zik" })
 
@@ -145,10 +161,17 @@ Tab:Slider({
 
 Tab:Space()
 
+-- Prevent multiple infinite jump connections
+local infiniteJumpEnabled = false
 Tab:Button({
     Title = "Infinite Jump",
     Icon = "jump",
     Callback = function()
+        if infiniteJumpEnabled then
+            notify("Infinite Jump", "Already enabled", 2)
+            return
+        end
+        infiniteJumpEnabled = true
         UserInputService.InputBegan:Connect(function(input, gameProcessed)
             if gameProcessed then return end
             if input.KeyCode == Enum.KeyCode.Space then
@@ -170,6 +193,7 @@ Tab:Label({ Title = "Status", Content = "Script loaded and ready!" })
 -- AUTO COOK TAB
 -- =====================
 local AutoTab = Window:Tab({ Title = "Auto Cook", Icon = "fire" })
+AutoTab = ensureSection(AutoTab, "Auto Cook")
 
 AutoTab:Toggle({
     Title = "Enable Auto Cook",
@@ -254,6 +278,7 @@ AutoTab:Label({ Title = "Info", Content = "Auto Cook akan mengumpulkan dan memas
 -- KILL AURA TAB
 -- =====================
 local AuraTab = Window:Tab({ Title = "Kill Aura", Icon = "zap" })
+AuraTab = ensureSection(AuraTab, "Kill Aura")
 
 AuraTab:Toggle({
     Title = "Enable Kill Aura",
@@ -353,6 +378,7 @@ AuraTab:Label({ Title = "Warning", Content = "Kill Aura dapat menyerang karakter
 -- TELEPORT TAB
 -- =====================
 local TeleportTab = Window:Tab({ Title = "Teleport", Icon = "pin" })
+TeleportTab = ensureSection(TeleportTab, "Teleport")
 
 TeleportTab:Button({
     Title = "Teleport to Spawn",
@@ -449,6 +475,7 @@ TeleportTab:Button({
 -- MISC TAB
 -- =====================
 local MiscTab = Window:Tab({ Title = "Misc", Icon = "settings" })
+MiscTab = ensureSection(MiscTab, "Misc")
 
 MiscTab:Toggle({
     Title = "No Clip",
