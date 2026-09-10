@@ -44,7 +44,14 @@ Tab:Slider({
         Default = 16,
     },
     Callback = function(value)
-        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = value
+        local Players = game:GetService("Players")
+        local player = Players.LocalPlayer
+        if not player then return end
+        local char = player.Character or player.CharacterAdded:Wait()
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = value
+        end
     end,
 })
 
@@ -67,7 +74,7 @@ WindUI:Notify({
     Duration = 5,
 })
 
-OpenButton = {
+local OpenButton = {
     Title         = "Open Hub",
     CornerRadius  = UDim.new(1, 0),
     StrokeThickness = 3,
@@ -79,27 +86,34 @@ OpenButton = {
         Color3.fromHex("#30FF6A"),
         Color3.fromHex("#e7ff2f")
     ),
-},
+}
 
-User = {
+local User = {
     Enabled   = true,
     Anonymous = false,          -- show "Anonymous" instead of real name
     Callback  = function()      -- called when the user clicks the panel
         print("user clicked")
     end,
-},
+}
+
+-- Choose a single background. Examples below — uncomment what you want to use.
 
 -- Solid asset
-Background = "rbxassetid://123456789",
+-- local Background = "rbxassetid://123456789"
 
 -- HTTPS image (downloaded on first run)
-Background = "https://example.com/bg.png",
+-- local Background = "https://example.com/bg.png"
 
 -- Looping video
-Background = "video:rbxassetid://987654321",
+-- local Background = "video:rbxassetid://987654321"
 
--- Gradient
-Background = WindUI:Gradient({
+-- Gradient (example)
+local Background = WindUI:Gradient({
     ["0"]   = { Color = Color3.fromHex("#1a1a2e"), Transparency = 0 },
     ["100"] = { Color = Color3.fromHex("#16213e"), Transparency = 0 },
-}, { Rotation = 90 }),
+}, { Rotation = 90 })
+
+-- If WindUI supports setting these after creation, apply them. Example (only if API supports):
+-- Window:SetOpenButton(OpenButton)
+-- Window:SetUserPanel(User)
+-- Window:SetBackground(Background)
