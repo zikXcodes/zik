@@ -1,145 +1,53 @@
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
 local Window = WindUI:CreateWindow({
-    Title = "Zik",
-    Icon = "",
+    Title = "Zik Burgerz Cheat",
+    Icon = "🍔",
     Theme = "Crimson",
-    Folder = "MyHub",
+    Folder = "ZikHub",
 })
-
-local Tab = Window:Tab({
-    Title = "Main",
-    Icon = "home",
-})
-
--- Toggle
-Tab:Toggle({
-    Title = "Enable Feature",
-    Value = false,
-    Callback = function(state)
-        print("Feature enabled:", state)
-    end,
-})
-
-Tab:Space()
-
--- Button
-Tab:Button({
-    Title = "Run Action",
-    Icon = "play",
-    Callback = function()
-        print("Button clicked")
-    end,
-})
-
-Tab:Space()
-
--- Slider
-Tab:Slider({
-    Title = "Walk Speed",
-    Step = 1,
-    Value = {
-        Min = 16,
-        Max = 100,
-        Default = 16,
-    },
-    Callback = function(value)
-        local Players = game:GetService("Players")
-        local player = Players.LocalPlayer
-        if not player then return end
-        local char = player.Character or player.CharacterAdded:Wait()
-        local humanoid = char:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid.WalkSpeed = value
-        end
-    end,
-})
-
-Tab:Space()
-
--- Dropdown
-Tab:Dropdown({
-    Title = "Select Team",
-    Values = { "Red", "Blue", "Green" },
-    Value = 1,
-    Callback = function(selectedValue)
-        print("Team selected:", selectedValue)
-    end,
-})
-
-WindUI:Notify({
-    Title = "Hub Loaded",
-    Content = "Welcome! My Hub is ready.",
-    Icon = "solar:bell-bold",
-    Duration = 5,
-})
-
-local OpenButton = {
-    Title         = "Open Hub",
-    CornerRadius  = UDim.new(1, 0),
-    StrokeThickness = 3,
-    Enabled       = true,
-    Draggable     = true,
-    OnlyMobile    = false,
-    Scale         = 0.5,
-    Color         = ColorSequence.new(
-        Color3.fromHex("#30FF6A"),
-        Color3.fromHex("#e7ff2f")
-    ),
-}
-
-local User = {
-    Enabled   = true,
-    Anonymous = false,          -- show "Anonymous" instead of real name
-    Callback  = function()      -- called when the user clicks the panel
-        print("user clicked")
-    end,
-}
-
--- Choose a single background. Examples below — uncomment what you want to use.
-
--- Solid asset
--- local Background = "rbxassetid://123456789"
-
--- HTTPS image (downloaded on first run)
--- local Background = "https://example.com/bg.png"
-
--- Looping video
--- local Background = "video:rbxassetid://987654321"
-
--- Gradient (example)
-local Background = WindUI:Gradient({
-    ["0"]   = { Color = Color3.fromHex("#1a1a2e"), Transparency = 0 },
-    ["100"] = { Color = Color3.fromHex("#16213e"), Transparency = 0 },
-}, { Rotation = 90 })
-
--- If WindUI supports setting these after creation, apply them. Example (only if API supports):
--- Window:SetOpenButton(OpenButton)
--- Window:SetUserPanel(User)
--- Window:SetBackground(Background)
-
 
 -- =====================
--- New features for Burgerz (auto cook + kill aura)
--- Note: these are heuristic/local implementations. Game internals may differ — adjust
--- target names/paths as needed for the specific Burgerz game's model names and structure.
+-- SERVICES & VARIABLES
 -- =====================
-
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
 
--- Global toggles so loops can be controlled from outside coroutines
+-- Global settings
 getgenv().ZikSettings = getgenv().ZikSettings or {
+    -- Auto Cook Settings
     AutoCook = false,
+    AutoCookSpeed = 0.5,
+    
+    -- Kill Aura Settings
     KillAura = false,
+    KillAuraRange = 30,
     KillAuraTargets = { npc = true, cop = true, customer = true },
-    KillAuraRange = 20,
-    CookInterval = 1.0,
+    
+    -- Auto Farm Settings
+    AutoFarm = false,
+    AutoFarmType = "burger", -- burger, money, xp
+    
+    -- ESP Settings
+    ESPEnabled = false,
+    ESPRange = 100,
+    
+    -- Speed Settings
+    WalkSpeed = 16,
+    SprintSpeed = 50,
+    IsSprinting = false,
+    
+    -- Teleport Settings
+    TeleportToFood = false,
+    TeleportToGrill = false,
 }
 
--- Utility: find humanoid on a Model
+-- =====================
+-- UTILITY FUNCTIONS
+-- =====================
 local function findHumanoid(model)
     if not model then return nil end
     for _, v in pairs(model:GetDescendants()) do
@@ -150,264 +58,427 @@ local function findHumanoid(model)
     return nil
 end
 
--- Kill aura implementation (local): finds nearby characters whose name matches targets and sets Health = 0
-local function killAuraLoop()
-    while getgenv().ZikSettings.KillAura do
-        local success, err = pcall(function()
-            if not LocalPlayer or not LocalPlayer.Character then return end
-            local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if not hrp then return end
-            for _, model in pairs(workspace:GetDescendants()) do
-                if model:IsA("Model") and model ~= LocalPlayer.Character then
-                    local name = model.Name:lower()
-                    local isTarget = false
-                    if getgenv().ZikSettings.KillAuraTargets.npc and name:find("npc") then isTarget = true end
-                    if getgenv().ZikSettings.KillAuraTargets.cop and name:find("cop") then isTarget = true end
-                    if getgenv().ZikSettings.KillAuraTargets.customer and (name:find("customer") or name:find("cust")) then isTarget = true end
-                    if isTarget then
-                        local targetHRP = model:FindFirstChild("HumanoidRootPart")
-                        local humanoid = findHumanoid(model)
-                        if targetHRP and humanoid and humanoid.Health > 0 then
-                            local distance = (targetHRP.Position - hrp.Position).Magnitude
-                            if distance <= getgenv().ZikSettings.KillAuraRange then
-                                -- try to set health to 0 (local change might be enough for some games)
-                                pcall(function() humanoid.Health = 0 end)
-                            end
-                        end
-                    end
+local function getHRP()
+    if not LocalPlayer or not LocalPlayer.Character then return nil end
+    return LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+end
+
+local function getDistance(pos1, pos2)
+    return (pos1 - pos2).Magnitude
+end
+
+local function notify(title, content, duration)
+    duration = duration or 3
+    WindUI:Notify({
+        Title = title,
+        Content = content,
+        Icon = "solar:bell-bold",
+        Duration = duration,
+    })
+end
+
+-- =====================
+-- MAIN TAB
+-- =====================
+local Tab = Window:Tab({
+    Title = "Main",
+    Icon = "home",
+})
+
+Tab:Label({ Title = "Welcome", Content = "Burgerz Cheat by Zik" })
+
+Tab:Space()
+
+Tab:Slider({
+    Title = "Walk Speed",
+    Step = 1,
+    Value = {
+        Min = 16,
+        Max = 150,
+        Default = 16,
+    },
+    Callback = function(value)
+        getgenv().ZikSettings.WalkSpeed = value
+        local hrp = getHRP()
+        if hrp and hrp.Parent:FindFirstChildOfClass("Humanoid") then
+            hrp.Parent:FindFirstChildOfClass("Humanoid").WalkSpeed = value
+        end
+    end,
+})
+
+Tab:Slider({
+    Title = "Jump Power",
+    Step = 1,
+    Value = {
+        Min = 50,
+        Max = 200,
+        Default = 50,
+    },
+    Callback = function(value)
+        local hrp = getHRP()
+        if hrp and hrp.Parent:FindFirstChildOfClass("Humanoid") then
+            hrp.Parent:FindFirstChildOfClass("Humanoid").JumpPower = value
+        end
+    end,
+})
+
+Tab:Space()
+
+Tab:Button({
+    Title = "Infinite Jump",
+    Icon = "jump",
+    Callback = function()
+        local jumped = false
+        UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            if gameProcessed then return end
+            if input.KeyCode == Enum.KeyCode.Space then
+                local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
                 end
             end
         end)
-        if not success then
-            warn("KillAura error:", err)
-        end
-        wait(0.2)
-    end
-end
+        notify("Infinite Jump", "Enabled! Press SPACE to jump", 3)
+    end,
+})
 
--- Auto cook implementation (very generic): tries to find raw items and cooking stations
--- You will likely need to change the search terms to match the Burgerz game structure.
-local function autoCookLoop()
-    while getgenv().ZikSettings.AutoCook do
-        local success, err = pcall(function()
-            -- Example heuristic: search for 'Raw' or 'Uncooked' items in workspace and move them to nearby 'Grill' or 'Cook' parts
-            local playerChar = LocalPlayer and LocalPlayer.Character
-            local hrp = playerChar and playerChar:FindFirstChild("HumanoidRootPart")
-            if not hrp then return end
+Tab:Label({ Title = "Status", Content = "Script loaded and ready!" })
 
-            local rawItems = {}
-            for _, obj in pairs(workspace:GetDescendants()) do
-                if obj:IsA("BasePart") or obj:IsA("Model") then
-                    local n = obj.Name:lower()
-                    if n:find("raw") or n:find("uncook") or n:find("patty") then
-                        table.insert(rawItems, obj)
-                    end
-                end
-            end
-
-            local grills = {}
-            for _, obj in pairs(workspace:GetDescendants()) do
-                local n = obj.Name:lower()
-                if (obj:IsA("BasePart") or obj:IsA("Model")) and (n:find("grill") or n:find("cook") or n:find("stove")) then
-                    table.insert(grills, obj)
-                end
-            end
-
-            -- simple interaction: move close to raw item, then move to grill and wait
-            for _, raw in pairs(rawItems) do
-                if not getgenv().ZikSettings.AutoCook then break end
-                local rawPos
-                if raw:IsA("BasePart") then 
-                    rawPos = raw.Position
-                else
-                    local part = raw:FindFirstChildWhichIsA("BasePart")
-                    rawPos = part and part.Position
-                end
-                if rawPos and hrp then
-                    if (rawPos - hrp.Position).Magnitude > 6 then
-                        -- teleport near the item (local teleport only)
-                        pcall(function() hrp.CFrame = CFrame.new(rawPos + Vector3.new(0, 3, 0)) end)
-                        wait(0.15)
-                    end
-
-                    -- attempt pickup by firing touch (heuristic)
-                    if raw:IsA("BasePart") then
-                        local playerPart = playerChar:FindFirstChildWhichIsA("BasePart")
-                        if playerPart then
-                            pcall(function() 
-                                firetouchinterest(raw, playerPart, 0)
-                                wait(0.1)
-                                firetouchinterest(raw, playerPart, 1)
-                            end)
-                        end
-                    end
-
-                    -- send to nearest grill
-                    local nearestGrill
-                    local nearestDist = math.huge
-                    for _, g in pairs(grills) do
-                        local gPos
-                        if g:IsA("BasePart") then 
-                            gPos = g.Position 
-                        else 
-                            local gPart = g:FindFirstChildWhichIsA("BasePart")
-                            gPos = gPart and gPart.Position 
-                        end
-                        if gPos then
-                            local d = (gPos - hrp.Position).Magnitude
-                            if d < nearestDist then 
-                                nearestDist = d
-                                nearestGrill = g 
-                            end
-                        end
-                    end
-
-                    if nearestGrill and nearestDist > 3 then
-                        local gPos
-                        if nearestGrill:IsA("BasePart") then 
-                            gPos = nearestGrill.Position 
-                        else 
-                            local gPart = nearestGrill:FindFirstChildWhichIsA("BasePart")
-                            gPos = gPart and gPart.Position 
-                        end
-                        if gPos then 
-                            pcall(function() hrp.CFrame = CFrame.new(gPos + Vector3.new(0, 3, 0)) end)
-                        end
-                    end
-
-                    -- wait a bit to simulate cooking
-                    wait(getgenv().ZikSettings.CookInterval)
-                end
-            end
-        end)
-        if not success then 
-            warn("AutoCook error:", err) 
-        end
-        wait(0.5)
-    end
-end
-
--- UI additions: controls for AutoCook and KillAura
-local AutoTab = Window:Tab({ Title = "Auto", Icon = "auto" })
+-- =====================
+-- AUTO COOK TAB
+-- =====================
+local AutoTab = Window:Tab({ Title = "Auto Cook", Icon = "fire" })
 
 AutoTab:Toggle({
-    Title = "Auto Cook",
+    Title = "Enable Auto Cook",
     Value = false,
     Callback = function(state)
         getgenv().ZikSettings.AutoCook = state
         if state then
-            spawn(autoCookLoop)
-            WindUI:Notify({ Title = "Auto Cook", Content = "Enabled", Duration = 3 })
+            spawn(function()
+                while getgenv().ZikSettings.AutoCook do
+                    local hrp = getHRP()
+                    if not hrp then
+                        wait(0.1)
+                        goto continue
+                    end
+
+                    local success, err = pcall(function()
+                        -- Search for raw food items
+                        for _, obj in pairs(workspace:GetDescendants()) do
+                            if not getgenv().ZikSettings.AutoCook then break end
+                            
+                            if obj:IsA("BasePart") or obj:IsA("Model") then
+                                local name = obj.Name:lower()
+                                if name:find("raw") or name:find("uncook") or name:find("patty") or name:find("meat") then
+                                    local pos = obj:IsA("BasePart") and obj.Position or obj:FindFirstChildWhichIsA("BasePart") and obj:FindFirstChildWhichIsA("BasePart").Position
+                                    
+                                    if pos and getDistance(pos, hrp.Position) < 50 then
+                                        -- Teleport to item
+                                        hrp.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
+                                        wait(0.2)
+                                        
+                                        -- Try to pick up
+                                        if obj:IsA("BasePart") then
+                                            local playerPart = LocalPlayer.Character:FindFirstChildWhichIsA("BasePart")
+                                            if playerPart then
+                                                pcall(function()
+                                                    firetouchinterest(obj, playerPart, 0)
+                                                    wait(0.1)
+                                                    firetouchinterest(obj, playerPart, 1)
+                                                end)
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end)
+                    
+                    if not success then warn("AutoCook Error:", err) end
+                    wait(getgenv().ZikSettings.AutoCookSpeed)
+                    
+                    ::continue::
+                end
+            end)
+            notify("Auto Cook", "Enabled ✓", 3)
         else
-            WindUI:Notify({ Title = "Auto Cook", Content = "Disabled", Duration = 3 })
+            notify("Auto Cook", "Disabled ✗", 3)
         end
     end,
 })
 
 AutoTab:Slider({
-    Title = "Cook Interval (s)",
+    Title = "Cook Speed",
     Step = 0.1,
-    Value = { Min = 0.2, Max = 5, Default = getgenv().ZikSettings.CookInterval },
-    Callback = function(val) getgenv().ZikSettings.CookInterval = val end,
+    Value = { Min = 0.2, Max = 2, Default = 0.5 },
+    Callback = function(val) 
+        getgenv().ZikSettings.AutoCookSpeed = val 
+    end,
 })
 
 AutoTab:Space()
 
-AutoTab:Toggle({
-    Title = "Kill Aura",
+AutoTab:Label({ Title = "Info", Content = "Auto Cook akan mengumpulkan dan memasak makanan" })
+
+-- =====================
+-- KILL AURA TAB
+-- =====================
+local AuraTab = Window:Tab({ Title = "Kill Aura", Icon = "zap" })
+
+AuraTab:Toggle({
+    Title = "Enable Kill Aura",
     Value = false,
     Callback = function(state)
         getgenv().ZikSettings.KillAura = state
         if state then
-            spawn(killAuraLoop)
-            WindUI:Notify({ Title = "Kill Aura", Content = "Enabled", Duration = 3 })
+            spawn(function()
+                while getgenv().ZikSettings.KillAura do
+                    local hrp = getHRP()
+                    if not hrp or not hrp.Parent then
+                        wait(0.2)
+                        goto continue_aura
+                    end
+
+                    local success, err = pcall(function()
+                        for _, model in pairs(workspace:GetDescendants()) do
+                            if not getgenv().ZikSettings.KillAura then break end
+                            
+                            if model:IsA("Model") and model ~= LocalPlayer.Character then
+                                local name = model.Name:lower()
+                                local isTarget = false
+                                
+                                -- Check target types
+                                if getgenv().ZikSettings.KillAuraTargets.npc and (name:find("npc") or name:find("npc")) then
+                                    isTarget = true
+                                end
+                                if getgenv().ZikSettings.KillAuraTargets.cop and name:find("cop") then
+                                    isTarget = true
+                                end
+                                if getgenv().ZikSettings.KillAuraTargets.customer and (name:find("customer") or name:find("cust")) then
+                                    isTarget = true
+                                end
+                                
+                                if isTarget then
+                                    local targetHRP = model:FindFirstChild("HumanoidRootPart")
+                                    local humanoid = findHumanoid(model)
+                                    
+                                    if targetHRP and humanoid and humanoid.Health > 0 then
+                                        local distance = getDistance(targetHRP.Position, hrp.Position)
+                                        if distance <= getgenv().ZikSettings.KillAuraRange then
+                                            pcall(function()
+                                                humanoid.Health = 0
+                                            end)
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end)
+                    
+                    if not success then warn("KillAura Error:", err) end
+                    wait(0.15)
+                    
+                    ::continue_aura::
+                end
+            end)
+            notify("Kill Aura", "Enabled ✓", 3)
         else
-            WindUI:Notify({ Title = "Kill Aura", Content = "Disabled", Duration = 3 })
+            notify("Kill Aura", "Disabled ✗", 3)
         end
     end,
 })
 
-AutoTab:Slider({
-    Title = "Kill Range",
-    Step = 1,
-    Value = { Min = 5, Max = 200, Default = getgenv().ZikSettings.KillAuraRange },
-    Callback = function(val) getgenv().ZikSettings.KillAuraRange = val end,
+AuraTab:Slider({
+    Title = "Aura Range",
+    Step = 5,
+    Value = { Min = 10, Max = 200, Default = 30 },
+    Callback = function(val) 
+        getgenv().ZikSettings.KillAuraRange = val 
+    end,
 })
 
-AutoTab:Checkbox({
+AuraTab:Space()
+
+AuraTab:Checkbox({
     Title = "Target NPC",
     Value = getgenv().ZikSettings.KillAuraTargets.npc,
     Callback = function(v) getgenv().ZikSettings.KillAuraTargets.npc = v end,
 })
 
-AutoTab:Checkbox({
-    Title = "Target Cop",
+AuraTab:Checkbox({
+    Title = "Target Cops",
     Value = getgenv().ZikSettings.KillAuraTargets.cop,
     Callback = function(v) getgenv().ZikSettings.KillAuraTargets.cop = v end,
 })
 
-AutoTab:Checkbox({
-    Title = "Target Customer",
+AuraTab:Checkbox({
+    Title = "Target Customers",
     Value = getgenv().ZikSettings.KillAuraTargets.customer,
     Callback = function(v) getgenv().ZikSettings.KillAuraTargets.customer = v end,
 })
 
--- UI: draw separators/lines between tabs to avoid sloppy look
--- This tries to attach simple lines overlay in PlayerGui. It may need adjusting depending on WindUI structure.
-local function createTabSeparators()
-    local playerGui = Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
-    if not playerGui then return end
-    local name = "ZikTabSeparators"
-    local gui = playerGui:FindFirstChild(name) or Instance.new("ScreenGui")
-    gui.Name = name
-    gui.ResetOnSpawn = false
-    gui.Parent = playerGui
+AuraTab:Space()
 
-    -- clear previous lines
-    for _, c in pairs(gui:GetChildren()) do
-        if c:IsA("Frame") and c.Name:match("ZikSeparator") then c:Destroy() end
-    end
+AuraTab:Label({ Title = "Warning", Content = "Kill Aura dapat menyerang karakter lain" })
 
-    -- heuristic: create a top horizontal line and a left vertical line to separate tabs area
-    local topLine = Instance.new("Frame")
-    topLine.Name = "ZikSeparatorTop"
-    topLine.Size = UDim2.new(1, 0, 0, 2)
-    topLine.Position = UDim2.new(0, 0, 0, 32)
-    topLine.BackgroundColor3 = Color3.fromHex("#222222")
-    topLine.BackgroundTransparency = 0
-    topLine.BorderSizePixel = 0
-    topLine.Parent = gui
+-- =====================
+-- TELEPORT TAB
+-- =====================
+local TeleportTab = Window:Tab({ Title = "Teleport", Icon = "pin" })
 
-    local leftLine = Instance.new("Frame")
-    leftLine.Name = "ZikSeparatorLeft"
-    leftLine.Size = UDim2.new(0, 2, 1, -32)
-    leftLine.Position = UDim2.new(0, 0, 0, 32)
-    leftLine.BackgroundColor3 = Color3.fromHex("#222222")
-    leftLine.BackgroundTransparency = 0
-    leftLine.BorderSizePixel = 0
-    leftLine.Parent = gui
+TeleportTab:Button({
+    Title = "Teleport to Spawn",
+    Icon = "home",
+    Callback = function()
+        local hrp = getHRP()
+        if hrp then
+            pcall(function()
+                hrp.CFrame = CFrame.new(0, 10, 0)
+                notify("Teleport", "Teleported to Spawn", 2)
+            end)
+        end
+    end,
+})
 
-    -- subtle strokes
-    for _, f in pairs({topLine, leftLine}) do
-        local stroke = Instance.new("UIStroke")
-        stroke.Thickness = 1
-        stroke.Color = Color3.fromHex("#FFFFFF")
-        stroke.Transparency = 0.9
-        stroke.Parent = f
-    end
-end
+TeleportTab:Button({
+    Title = "Teleport to Nearest NPC",
+    Icon = "user",
+    Callback = function()
+        local hrp = getHRP()
+        if not hrp then return end
+        
+        local nearest = nil
+        local nearestDist = math.huge
+        
+        for _, model in pairs(workspace:GetDescendants()) do
+            if model:IsA("Model") and model ~= LocalPlayer.Character then
+                local name = model.Name:lower()
+                if name:find("npc") or name:find("customer") then
+                    local targetHRP = model:FindFirstChild("HumanoidRootPart")
+                    if targetHRP then
+                        local dist = getDistance(targetHRP.Position, hrp.Position)
+                        if dist < nearestDist then
+                            nearestDist = dist
+                            nearest = targetHRP
+                        end
+                    end
+                end
+            end
+        end
+        
+        if nearest then
+            pcall(function()
+                hrp.CFrame = CFrame.new(nearest.Position + Vector3.new(0, 3, 0))
+                notify("Teleport", "Teleported to NPC", 2)
+            end)
+        end
+    end,
+})
 
--- Try to create separators now and whenever PlayerGui is added
-spawn(function()
-    pcall(function() createTabSeparators() end)
-    local pg = Players.LocalPlayer:WaitForChild("PlayerGui")
-    pg.ChildAdded:Connect(function(child)
-        wait(0.2)
-        pcall(function() createTabSeparators() end)
-    end)
-end)
+TeleportTab:Button({
+    Title = "Teleport to Nearest Food",
+    Icon = "apple",
+    Callback = function()
+        local hrp = getHRP()
+        if not hrp then return end
+        
+        local nearest = nil
+        local nearestDist = math.huge
+        
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") or obj:IsA("Model") then
+                local name = obj.Name:lower()
+                if name:find("burger") or name:find("patty") or name:find("food") or name:find("raw") then
+                    local pos = obj:IsA("BasePart") and obj.Position or obj:FindFirstChildWhichIsA("BasePart") and obj:FindFirstChildWhichIsA("BasePart").Position
+                    if pos then
+                        local dist = getDistance(pos, hrp.Position)
+                        if dist < nearestDist then
+                            nearestDist = dist
+                            nearest = pos
+                        end
+                    end
+                end
+            end
+        end
+        
+        if nearest then
+            pcall(function()
+                hrp.CFrame = CFrame.new(nearest + Vector3.new(0, 3, 0))
+                notify("Teleport", "Teleported to Food", 2)
+            end)
+        end
+    end,
+})
 
--- Keep old main tab visible and tidy
-Tab:Label({ Title = "Info:", Content = "Use the Auto tab to enable Auto Cook and Kill Aura for Burgerz." })
+-- =====================
+-- MISC TAB
+-- =====================
+local MiscTab = Window:Tab({ Title = "Misc", Icon = "settings" })
 
--- End of file
+MiscTab:Toggle({
+    Title = "No Clip",
+    Value = false,
+    Callback = function(state)
+        local char = LocalPlayer.Character
+        if not char then return end
+        
+        if state then
+            for _, part in pairs(char:FindFirstChildOfClass("Humanoid").Parent:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+            notify("No Clip", "Enabled ✓", 2)
+        else
+            for _, part in pairs(char:FindFirstChildOfClass("Humanoid").Parent:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
+            notify("No Clip", "Disabled ✗", 2)
+        end
+    end,
+})
+
+MiscTab:Space()
+
+MiscTab:Button({
+    Title = "Refresh Character",
+    Icon = "refresh",
+    Callback = function()
+        if LocalPlayer.Character then
+            LocalPlayer.Character:Destroy()
+        end
+        notify("Character", "Refreshed", 2)
+    end,
+})
+
+MiscTab:Button({
+    Title = "Reset Camera",
+    Icon = "eye",
+    Callback = function()
+        local camera = workspace.CurrentCamera
+        local hrp = getHRP()
+        if hrp then
+            camera.CFrame = hrp.CFrame + hrp.CFrame.LookVector * 10
+        end
+        notify("Camera", "Reset", 2)
+    end,
+})
+
+MiscTab:Space()
+
+MiscTab:Label({ Title = "Script Info", Content = "Zik Burgerz Cheat v1.0" })
+MiscTab:Label({ Title = "Developer", Content = "zikXcodes" })
+
+-- =====================
+-- NOTIFICATION
+-- =====================
+notify("Hub Loaded", "Welcome to Zik Burgerz Cheat! 🍔", 5)
+
+-- =====================
+-- LOAD COMPLETE
+-- =====================
+print("✓ Zik Burgerz Cheat Script Loaded Successfully!")
+print("✓ Game ID: 99817148924004")
