@@ -217,7 +217,8 @@ local function autoCookLoop()
             for _, raw in pairs(rawItems) do
                 if not getgenv().ZikSettings.AutoCook then break end
                 local rawPos
-                if raw:IsA("BasePart") then rawPos = raw.Position
+                if raw:IsA("BasePart") then 
+                    rawPos = raw.Position
                 else
                     local part = raw:FindFirstChildWhichIsA("BasePart")
                     rawPos = part and part.Position
@@ -231,7 +232,14 @@ local function autoCookLoop()
 
                     -- attempt pickup by firing touch (heuristic)
                     if raw:IsA("BasePart") then
-                        pcall(function() firetouchinterest(raw, playerChar:FindFirstChildWhichIsA("BasePart"), 0); wait(); firetouchinterest(raw, playerChar:FindFirstChildWhichIsA("BasePart"), 1) end)
+                        local playerPart = playerChar:FindFirstChildWhichIsA("BasePart")
+                        if playerPart then
+                            pcall(function() 
+                                firetouchinterest(raw, playerPart, 0)
+                                wait(0.1)
+                                firetouchinterest(raw, playerPart, 1)
+                            end)
+                        end
                     end
 
                     -- send to nearest grill
@@ -239,16 +247,32 @@ local function autoCookLoop()
                     local nearestDist = math.huge
                     for _, g in pairs(grills) do
                         local gPos
-                        if g:IsA("BasePart") then gPos = g.Position else gPos = g:FindFirstChildWhichIsA("BasePart") and g:FindFirstChildWhichIsA("BasePart").Position end
+                        if g:IsA("BasePart") then 
+                            gPos = g.Position 
+                        else 
+                            local gPart = g:FindFirstChildWhichIsA("BasePart")
+                            gPos = gPart and gPart.Position 
+                        end
                         if gPos then
                             local d = (gPos - hrp.Position).Magnitude
-                            if d < nearestDist then nearestDist = d; nearestGrill = g end
+                            if d < nearestDist then 
+                                nearestDist = d
+                                nearestGrill = g 
+                            end
                         end
                     end
 
                     if nearestGrill and nearestDist > 3 then
-                        local gPos = nearestGrill:IsA("BasePart") and nearestGrill.Position or (nearestGrill:FindFirstChildWhichIsA("BasePart") and nearestGrill:FindFirstChildWhichIsA("BasePart").Position)
-                        if gPos then pcall(function() hrp.CFrame = CFrame.new(gPos + Vector3.new(0, 3, 0)) end)
+                        local gPos
+                        if nearestGrill:IsA("BasePart") then 
+                            gPos = nearestGrill.Position 
+                        else 
+                            local gPart = nearestGrill:FindFirstChildWhichIsA("BasePart")
+                            gPos = gPart and gPart.Position 
+                        end
+                        if gPos then 
+                            pcall(function() hrp.CFrame = CFrame.new(gPos + Vector3.new(0, 3, 0)) end)
+                        end
                     end
 
                     -- wait a bit to simulate cooking
@@ -256,7 +280,9 @@ local function autoCookLoop()
                 end
             end
         end)
-        if not success then warn("AutoCook error:", err) end
+        if not success then 
+            warn("AutoCook error:", err) 
+        end
         wait(0.5)
     end
 end
@@ -382,6 +408,6 @@ spawn(function()
 end)
 
 -- Keep old main tab visible and tidy
-Tab:Label({ Title = "Info:", Content = "Use the Auto tab to enable Auto Cook and Kill Aura for Burgerz.", })
+Tab:Label({ Title = "Info:", Content = "Use the Auto tab to enable Auto Cook and Kill Aura for Burgerz." })
 
 -- End of file
