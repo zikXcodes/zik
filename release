@@ -2149,4 +2149,65 @@ function Speed_Library:CreateWindow(Config)
                 for i, value in ipairs(Funcs_Dropdown.Value) do
                   if value == OptionName then
                     table.remove(Funcs_Dropdown.Value, i)
+                    break
+                  end
+                end
+              end
+            else
+              Funcs_Dropdown.Value = {OptionName}
+            end
+
+            Funcs_Dropdown:Set(Funcs_Dropdown.Value)
+          end)
+        
+          local function UpdateCanvasSize()
+            local OffsetY = 0
+
+            for _, child in ipairs(ScrollSelect:GetChildren()) do
+              if child.Name ~= "UIListLayout" and child.Name ~= "SearchBar" then
+                OffsetY = OffsetY + 5 + child.Size.Y.Offset
+              end
+            end
+
+            ScrollSelect.CanvasSize = UDim2.new(0, 0, 0, OffsetY)
+          end
+        
+          UpdateCanvasSize()
+
+          DropCount += 1
+        end
+
+        function Funcs_Dropdown:Refresh(RefreshList, Selecting)
+          RefreshList = RefreshList or {}
+          Selecting = Selecting or {}
+          
+          Funcs_Dropdown:Clear()
+          
+          for _, Drop in ipairs(RefreshList) do
+            Funcs_Dropdown:AddOption(Drop)
+          end
+      
+          Funcs_Dropdown.Options = RefreshList
+          Funcs_Dropdown:Set(Selecting)
+        end
+      
+        Funcs_Dropdown:Refresh(Funcs_Dropdown.Options, Funcs_Dropdown.Value)
+      
+        ItemCount += 1
+        CountDropdown += 1
+        return Funcs_Dropdown
+      end
+
+      ItemCount += 1
+      return Item
+    end
+
+    CountTab += 1
+    return Sections
+  end
+
+  return Tabs
+end
+
+return Speed_Library
  
