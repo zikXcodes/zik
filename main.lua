@@ -1,202 +1,342 @@
--- Target Lock / Camera Lock
--- Untuk Roblox Studio / game milik sendiri
+--========================================================--
+-- TARGET LOCK + INVISIBLE
+-- Roblox Studio / Game milik sendiri
+-- LocalScript -> StarterPlayerScripts
+--========================================================--
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
-local enabled = false
-local target = nil
+--========================================================--
+-- CONFIG
+--========================================================--
 
-local FOV_RADIUS = 180
-local SMOOTHNESS = 0.18
+local AimEnabled = false
+local InvisibleEnabled = false
 
---==================================================
--- GUI
---==================================================
+local FOV = 180
+local Smoothness = 0.18
 
-local gui = Instance.new("ScreenGui")
-gui.Name = "TargetLockUI"
-gui.ResetOnSpawn = false
-gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+local Target = nil
 
-local button = Instance.new("TextButton")
-button.Size = UDim2.fromOffset(170, 45)
-button.Position = UDim2.new(1, -190, 1, -70)
-button.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-button.TextColor3 = Color3.new(1, 1, 1)
-button.TextSize = 16
-button.Font = Enum.Font.GothamBold
-button.Text = "TARGET LOCK: OFF"
-button.Parent = gui
+--========================================================--
+-- OBsidian-style UI
+--========================================================--
 
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 10)
-corner.Parent = button
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "TargetLockUI"
+Gui.ResetOnSpawn = false
+Gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
---==================================================
--- FOV CIRCLE
---==================================================
+local Main = Instance.new("Frame")
+Main.Size = UDim2.fromOffset(300, 240)
+Main.Position = UDim2.new(0.5, -150, 0.5, -120)
+Main.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
+Main.BorderSizePixel = 0
+Main.Parent = Gui
 
-local fov = Instance.new("Frame")
-fov.Name = "FOV"
-fov.Size = UDim2.fromOffset(FOV_RADIUS * 2, FOV_RADIUS * 2)
-fov.AnchorPoint = Vector2.new(0.5, 0.5)
-fov.Position = UDim2.fromScale(0.5, 0.5)
-fov.BackgroundTransparency = 1
-fov.Visible = false
-fov.Parent = gui
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 12)
+Corner.Parent = Main
 
-local stroke = Instance.new("UIStroke")
-stroke.Thickness = 2
-stroke.Transparency = 0.2
-stroke.Parent = fov
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -20, 0, 40)
+Title.Position = UDim2.fromOffset(10, 5)
+Title.BackgroundTransparency = 1
+Title.Text = "TARGET CONTROL"
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 18
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Main
 
-local fovCorner = Instance.new("UICorner")
-fovCorner.CornerRadius = UDim.new(1, 0)
-fovCorner.Parent = fov
+--========================================================--
+-- BUTTON CREATOR
+--========================================================--
 
---==================================================
--- TARGET CHECK
---==================================================
+local function CreateToggle(text, y)
+	local Button = Instance.new("TextButton")
 
-local function getCharacter(player)
-	local character = player.Character
+	Button.Size = UDim2.new(1, -30, 0, 42)
+	Button.Position = UDim2.fromOffset(15, y)
 
-	if not character then
-		return nil
-	end
+	Button.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+	Button.BorderSizePixel = 0
 
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	local root = character:FindFirstChild("HumanoidRootPart")
+	Button.Text = text .. ": OFF"
+	Button.TextColor3 = Color3.fromRGB(220, 220, 225)
 
-	if not humanoid or not root then
-		return nil
-	end
+	Button.Font = Enum.Font.GothamMedium
+	Button.TextSize = 14
 
-	if humanoid.Health <= 0 then
-		return nil
-	end
+	Button.Parent = Main
 
-	return character, humanoid, root
+	local C = Instance.new("UICorner")
+	C.CornerRadius = UDim.new(0, 8)
+	C.Parent = Button
+
+	return Button
 end
 
-local function getClosestTarget()
-	local closestPlayer = nil
-	local closestDistance = FOV_RADIUS
+local AimToggle = CreateToggle("Aim Lock", 55)
+local InvisibleToggle = CreateToggle("Invisible", 105)
 
-	local viewportCenter = Vector2.new(
+--========================================================--
+-- SLIDER
+--========================================================--
+
+local FOVLabel = Instance.new("TextLabel")
+FOVLabel.Size = UDim2.new(1, -30, 0, 25)
+FOVLabel.Position = UDim2.fromOffset(15, 160)
+FOVLabel.BackgroundTransparency = 1
+FOVLabel.Text = "FOV: " .. FOV
+FOVLabel.TextColor3 = Color3.fromRGB(220, 220, 225)
+FOVLabel.Font = Enum.Font.Gotham
+FOVLabel.TextSize = 13
+FOVLabel.TextXAlignment = Enum.TextXAlignment.Left
+FOVLabel.Parent = Main
+
+local FOVBox = Instance.new("TextBox")
+FOVBox.Size = UDim2.new(1, -30, 0, 35)
+FOVBox.Position = UDim2.fromOffset(15, 185)
+FOVBox.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+FOVBox.BorderSizePixel = 0
+FOVBox.Text = tostring(FOV)
+FOVBox.TextColor3 = Color3.new(1, 1, 1)
+FOVBox.Font = Enum.Font.Gotham
+FOVBox.TextSize = 14
+FOVBox.ClearTextOnFocus = false
+FOVBox.Parent = Main
+
+local BoxCorner = Instance.new("UICorner")
+BoxCorner.CornerRadius = UDim.new(0, 8)
+BoxCorner.Parent = FOVBox
+
+FOVBox.FocusLost:Connect(function()
+	local Value = tonumber(FOVBox.Text)
+
+	if Value then
+		FOV = math.clamp(Value, 50, 500)
+		FOVBox.Text = tostring(FOV)
+		FOVLabel.Text = "FOV: " .. FOV
+	end
+end)
+
+--========================================================--
+-- TARGET FINDER
+--========================================================--
+
+local function GetCharacter(Player)
+	if not Player.Character then
+		return nil
+	end
+
+	local Character = Player.Character
+	local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+	local Root = Character:FindFirstChild("HumanoidRootPart")
+
+	if not Humanoid or not Root then
+		return nil
+	end
+
+	if Humanoid.Health <= 0 then
+		return nil
+	end
+
+	return Character, Humanoid, Root
+end
+
+local function GetClosestTarget()
+	local Closest = nil
+	local ClosestDistance = FOV
+
+	local Center = Vector2.new(
 		Camera.ViewportSize.X / 2,
 		Camera.ViewportSize.Y / 2
 	)
 
-	for _, player in ipairs(Players:GetPlayers()) do
-		if player ~= LocalPlayer then
+	for _, Player in ipairs(Players:GetPlayers()) do
 
-			local character, humanoid, root = getCharacter(player)
+		if Player ~= LocalPlayer then
 
-			if character and humanoid and root then
+			local Character, Humanoid, Root =
+				GetCharacter(Player)
 
-				local screenPosition, visible =
-					Camera:WorldToViewportPoint(root.Position)
+			if Character and Root then
 
-				if visible and screenPosition.Z > 0 then
+				local Position, Visible =
+					Camera:WorldToViewportPoint(
+						Root.Position
+					)
 
-					local distance = (
-						Vector2.new(screenPosition.X, screenPosition.Y)
-						- viewportCenter
-					).Magnitude
+				if Visible and Position.Z > 0 then
 
-					if distance < closestDistance then
-						closestDistance = distance
-						closestPlayer = player
+					local Distance =
+						(
+							Vector2.new(
+								Position.X,
+								Position.Y
+							) - Center
+						).Magnitude
+
+					if Distance < ClosestDistance then
+						ClosestDistance = Distance
+						Closest = Player
 					end
 				end
 			end
 		end
 	end
 
-	return closestPlayer
+	return Closest
 end
 
---==================================================
--- TOGGLE
---==================================================
+--========================================================--
+-- AIM LOCK
+--========================================================--
 
-local function toggleLock()
-	enabled = not enabled
+AimToggle.MouseButton1Click:Connect(function()
 
-	if enabled then
-		target = getClosestTarget()
+	AimEnabled = not AimEnabled
 
-		button.Text = "TARGET LOCK: ON"
-		fov.Visible = true
+	if AimEnabled then
+
+		AimToggle.Text = "Aim Lock: ON"
+		AimToggle.TextColor3 =
+			Color3.fromRGB(0, 255, 140)
+
+		Target = GetClosestTarget()
+
 	else
-		target = nil
 
-		button.Text = "TARGET LOCK: OFF"
-		fov.Visible = false
+		AimToggle.Text = "Aim Lock: OFF"
+		AimToggle.TextColor3 =
+			Color3.fromRGB(220, 220, 225)
+
+		Target = nil
+	end
+end)
+
+RunService.RenderStepped:Connect(function()
+
+	if not AimEnabled then
+		return
+	end
+
+	if not Target then
+		Target = GetClosestTarget()
+		return
+	end
+
+	local Character, Humanoid, Root =
+		GetCharacter(Target)
+
+	if not Character then
+		Target = GetClosestTarget()
+		return
+	end
+
+	local CameraPosition = Camera.CFrame.Position
+
+	local Desired =
+		CFrame.lookAt(
+			CameraPosition,
+			Root.Position
+		)
+
+	Camera.CFrame =
+		Camera.CFrame:Lerp(
+			Desired,
+			Smoothness
+		)
+end)
+
+--========================================================--
+-- INVISIBLE
+--========================================================--
+
+local OriginalTransparency = {}
+
+local function SetInvisible(State)
+
+	local Character = LocalPlayer.Character
+
+	if not Character then
+		return
+	end
+
+	for _, Object in ipairs(Character:GetDescendants()) do
+
+		if Object:IsA("BasePart")
+			or Object:IsA("Decal")
+			or Object:IsA("Texture") then
+
+			if State then
+
+				if OriginalTransparency[Object] == nil then
+					OriginalTransparency[Object] =
+						Object.Transparency
+				end
+
+				Object.Transparency = 1
+
+			else
+
+				if OriginalTransparency[Object] ~= nil then
+					Object.Transparency =
+						OriginalTransparency[Object]
+				end
+			end
+		end
+	end
+
+	if not State then
+		table.clear(OriginalTransparency)
 	end
 end
 
-button.MouseButton1Click:Connect(toggleLock)
+InvisibleToggle.MouseButton1Click:Connect(function()
 
--- PC shortcut
-UserInputService.InputBegan:Connect(function(input, processed)
-	if processed then
-		return
-	end
+	InvisibleEnabled =
+		not InvisibleEnabled
 
-	if input.KeyCode == Enum.KeyCode.Q then
-		toggleLock()
+	SetInvisible(InvisibleEnabled)
+
+	if InvisibleEnabled then
+
+		InvisibleToggle.Text =
+			"Invisible: ON"
+
+		InvisibleToggle.TextColor3 =
+			Color3.fromRGB(0, 255, 140)
+
+	else
+
+		InvisibleToggle.Text =
+			"Invisible: OFF"
+
+		InvisibleToggle.TextColor3 =
+			Color3.fromRGB(220, 220, 225)
 	end
 end)
 
---==================================================
--- CAMERA LOCK
---==================================================
+--========================================================--
+-- RESPAWN SUPPORT
+--========================================================--
 
-RunService.RenderStepped:Connect(function()
-	if not enabled then
-		return
+LocalPlayer.CharacterAdded:Connect(function()
+
+	OriginalTransparency = {}
+
+	if InvisibleEnabled then
+		task.wait(0.5)
+		SetInvisible(true)
 	end
 
-	if not target then
-		target = getClosestTarget()
-		return
-	end
-
-	local character, humanoid, root = getCharacter(target)
-
-	if not character then
-		target = getClosestTarget()
-		return
-	end
-
-	local cameraPosition = Camera.CFrame.Position
-	local targetPosition = root.Position
-
-	local desiredCFrame = CFrame.lookAt(
-		cameraPosition,
-		targetPosition
-	)
-
-	Camera.CFrame = Camera.CFrame:Lerp(
-		desiredCFrame,
-		SMOOTHNESS
-	)
+	Target = nil
 end)
 
---==================================================
--- KEEP FOV CENTERED
---==================================================
-
-RunService.RenderStepped:Connect(function()
-	fov.Position = UDim2.fromOffset(
-		Camera.ViewportSize.X / 2,
-		Camera.ViewportSize.Y / 2
-	)
-end)
+print("Target Control loaded.")
