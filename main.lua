@@ -53,6 +53,10 @@ Title.TextSize = 18
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Main
 
+local Toggle = ButtonDestroyGui
+Toggle.Size = UDim2.new(1, -20, 0, 40)
+
+
 --========================================================--
 -- BUTTON CREATOR
 --========================================================--
