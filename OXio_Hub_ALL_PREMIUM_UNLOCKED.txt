@@ -1,29 +1,40 @@
--- Recovered Luau source by ZeroVector
-local lib = loadstring(game:HttpGet("https://script.panduhub.com/PanduUiLibrary.lua"))()
-local v, Players, localPlayer, RunService, UserInputService, VirtualInputManager, ReplicatedStorage, CoreGui, playerGui, currentCamera, CollectionService, HttpService, tbl, tbl2, tbl3, flag, tbl4, fn, fn2, fn3
-local fn4, fn5, fn6, fn7, fn8, v2, fn9, fn10, fn11
+local UI_LIBRARY_URL = "https://script.panduhub.com/PanduUiLibrary.lua"
+local LOGO_ASSET = "rbxassetid://0" -- Ganti dengan ID logo N3K0P01 HUB
 
-do
-    lib.Scheme.AccentColor = Color3.fromRGB(255, 255, 255)
-    lib.Scheme.BackgroundColor = Color3.fromRGB(10, 10, 12)
-    lib.Scheme.MainColor = Color3.fromRGB(16, 16, 18)
-    lib.Scheme.OutlineColor = Color3.fromRGB(255, 255, 255)
-    lib.Scheme.FontColor = Color3.fromRGB(235, 235, 240)
-    lib.Scheme.SubTextColor = Color3.fromRGB(140, 140, 150)
-    lib.Scheme.HoverColor = Color3.fromRGB(22, 22, 26)
 
-    v = lib:CreateWindow({
-        Title = "OXio Hub",
+local success, lib = pcall(function()
+    return loadstring(game:HttpGet(UI_LIBRARY_URL))()
+end)
+
+
+if not success or not lib then
+    warn("ZIK HUB UI: library UI gagal dimuat.")
+    return
+end
+
+
+-- TEMA MERAH + HITAM
+lib.Scheme.AccentColor = Color3.fromRGB(255, 25, 55)
+lib.Scheme.BackgroundColor = Color3.fromRGB(0, 0, 0)
+lib.Scheme.MainColor = Color3.fromRGB(8, 8, 10)
+lib.Scheme.OutlineColor = Color3.fromRGB(255, 45, 70)
+lib.Scheme.FontColor = Color3.fromRGB(255, 255, 255)
+lib.Scheme.SubTextColor = Color3.fromRGB(165, 165, 175)
+lib.Scheme.HoverColor = Color3.fromRGB(28, 8, 12)
+
+
+ v = lib:CreateWindow({
+        Title = "ZIK HUB",
         Subtitle = "Violance District",
         SubtitleColor = Color3.fromRGB(190, 140, 255),
         Logo = "rbxassetid://118755181202304",
         LogoSize = 32,
         SphereText = false,
-        SphereWords = "ZX",
+        SphereWords = "ZKHUB",
         SphereImage = "rbxassetid://118755181202304",
         SphereIconSize = 38,
         Watermark = true,
-        WatermarkText = "OXIO",
+        WatermarkText = "ZKHUB",
         WatermarkIcon = "rbxassetid://118755181202304",
     })
 
