@@ -2,7 +2,7 @@ local MugiHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/4Mugi
 
 local Window = MugiHub.Library:CreateWindow({
     "Nova Hub",
-    "A short tagline",
+    "WELCOME",
     105,
     UDim2.fromOffset(480, 275),
     Enum.KeyCode.RightControl,
@@ -12,12 +12,8 @@ local Window = MugiHub.Library:CreateWindow({
 local Tab = Window:AddTab({"Main", "home"})
 local Section = Tab:AddSection("General")
 
-Section:AddToggle({
-    "Example Toggle",
-    false,
-    function(value) print("Toggle is now:", value) end
-})
 
-Section:AddConfigManager({})
+
+local Tab = Window:addTab({"Misc", "rocket"})
 
 MugiHub.Library:SetNotification({Type = "success", Content = "Loaded!", Delay = 3})
