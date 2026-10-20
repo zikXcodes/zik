@@ -4,7 +4,7 @@ local Window = MugiHub.Library:CreateWindow({
     "Nova Hub",
     "WELCOME",
     105,
-    UDim2.fromOffset(480, 275),
+    UDim2.fromOffset(700, 475),
     Enum.KeyCode.RightControl,
     "hub",
 })
